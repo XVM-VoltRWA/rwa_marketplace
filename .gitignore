@@ -23,3 +23,7 @@ Thumbs.db
 # Supabase
 **/supabase/.temp/
 **/supabase/.branches/
+
+# Other
+README-SYNC.md
+sync-to-public.sh

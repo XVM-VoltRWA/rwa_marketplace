@@ -136,11 +136,82 @@ This document describes the 15 core functions that power the RWA marketplace.
 
 ## Architecture Overview
 
-### Core Flow
-1. **Asset Creation**: `create-asset` → `auto-mint-token` → `complete-minting`
-2. **Listing**: `escrow-token` → token transferred to escrow
-3. **Purchase**: `purchase-from-escrow` → `auto-transfer-token` → token transferred to buyer
-4. **Transaction Processing**: `poll-pending-transactions` monitors all pending transactions
+### Detailed Flow Diagrams
+
+#### 1. Adding an Asset Flow
+```
+Frontend Calls:
+1. POST /create-asset
+   → Creates asset record in DB (status: 'pending')
+   → Backend wallet creates token on XRPL
+   → Returns XUMM payload for user to create trustline
+
+2. POST /transaction-status (polling)
+   → Frontend polls to check if trustline creation is complete
+   → Once signed, trustline exists on XRPL
+
+3. POST /complete-token-issuance
+   → Updates asset status to 'minting'
+   → Triggers internal token minting process
+
+Internal Backend Calls:
+4. auto-mint-token (called internally)
+   → Backend wallet mints tokens to user's address
+   → Tokens transferred on XRPL ledger
+
+5. complete-minting (called internally)
+   → Updates asset status to 'active'
+   → Asset fully created and tokens in user's wallet
+```
+
+#### 2. Posting Asset for Sale Flow
+```
+Frontend Calls:
+1. POST /escrow-token
+   → Creates escrow transaction record in DB
+   → Returns XUMM payload for token transfer to escrow
+
+2. POST /transaction-status (polling)
+   → Frontend polls to check if transfer is complete
+   → Once signed, tokens move to backend escrow wallet on XRPL
+
+Internal Processing:
+3. poll-pending-transactions (backend cron job)
+   → Detects completed escrow transaction
+   → Updates asset escrow_status to 'escrowed'
+   → Updates asset status to 'for_sale'
+   → Asset now visible in marketplace
+```
+
+#### 3. Buying an Asset Flow
+```
+Frontend Calls:
+1. POST /purchase-from-escrow
+   → Creates purchase transaction record in DB
+   → Returns XUMM payload for buyer to pay XRP to seller
+
+2. POST /transaction-status (polling)
+   → Frontend polls to check if payment is complete
+   → Once signed, XRP transferred from buyer to seller on XRPL
+
+Internal Backend Calls:
+3. poll-pending-transactions (backend cron job)
+   → Detects completed purchase payment
+   → Triggers automatic token transfer
+
+4. auto-transfer-token (called internally)
+   → Backend escrow wallet transfers token to buyer on XRPL
+   → Updates asset owner in DB
+   → Updates asset status to 'active'
+   → Updates escrow_status to 'not_escrowed'
+   → Purchase complete - buyer owns asset
+```
+
+### Core Flow Summary
+1. **Asset Creation**: `create-asset` → trustline → `complete-token-issuance` → `auto-mint-token` → `complete-minting`
+2. **Listing**: `escrow-token` → XUMM sign → `poll-pending-transactions` → asset marked for sale
+3. **Purchase**: `purchase-from-escrow` → XUMM payment → `poll-pending-transactions` → `auto-transfer-token` → ownership transferred
+4. **Transaction Processing**: `poll-pending-transactions` continuously monitors all pending transactions
 
 ### Key Design Decisions
 - **Backend Wallet**: Single issuer wallet for all tokens (XRPL limitation)

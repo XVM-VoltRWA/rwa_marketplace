@@ -26,6 +26,8 @@ interface Asset {
   issuance_payload_id?: string
   issuance_status?: string
   issuance_tx_hash?: string
+  listed_at?: string
+  escrow_status?: string
 }
 
 const wallet = reactive<WalletConnection>({
@@ -314,7 +316,7 @@ const purchaseAsset = async () => {
   }
 }
 
-const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell' | 'issuance' | 'mint' | 'trustline') => {
+const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell' | 'issuance' | 'mint' | 'trustline' | 'escrow') => {
   const poll = async () => {
     const result = await apiRequest('/transaction-status', 'POST', { payloadId })
     
@@ -339,16 +341,15 @@ const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell
           
           if (shouldAddTrustline && purchaseForm.assetId) {
             // Get the asset details to create trustline
-            const assetResponse = await apiRequest('/get-assets', 'GET', {}, `?id=${purchaseForm.assetId}`)
+            const assetResponse = await apiRequest(`/get-assets?id=${purchaseForm.assetId}`)
             if (assetResponse.ok && assetResponse.data.assets.length > 0) {
               const asset = assetResponse.data.assets[0]
               
               // Pre-fill the trustline form
-              trustlineForm.currency = asset.token_currency
-              trustlineForm.issuer = asset.token_issuer
+              // trustLineForm doesn't have currency/issuer properties, skipping
               
               // Automatically trigger trustline creation to show QR code
-              trustlineForm.status = `Creating trustline for purchased token: ${asset.name} (${asset.token_currency})...`
+              trustLineForm.status = `Creating trustline for purchased token: ${asset.name} (${asset.token_currency})...`
               
               const result = await apiRequest('/create-trustline', 'POST', {
                 assetId: asset.id,
@@ -357,15 +358,15 @@ const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell
 
               if (result.ok) {
                 const { payloadId, qrCode, deepLink, message } = result.data
-                trustlineForm.payloadId = payloadId
-                trustlineForm.qrCode = qrCode
-                trustlineForm.deepLink = deepLink
-                trustlineForm.status = `${message} - Scan QR code to add ${asset.name} to your wallet`
+                trustLineForm.payloadId = payloadId
+                trustLineForm.qrCode = qrCode
+                trustLineForm.deepLink = deepLink
+                trustLineForm.status = `${message} - Scan QR code to add ${asset.name} to your wallet`
                 
                 // Start monitoring the trustline transaction
                 setTimeout(() => pollTransactionStatus(payloadId, 'trustline'), 5000)
               } else {
-                trustlineForm.status = `Failed to create trustline for ${asset.name}: ${result.data?.error || 'Unknown error'}`
+                trustLineForm.status = `Failed to create trustline for ${asset.name}: ${result.data?.error || 'Unknown error'}`
               }
             }
           }
@@ -436,6 +437,25 @@ const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell
           
           loadUserAssets()
           loadMarketplaceAssets()
+        } else if (type === 'escrow') {
+          escrowForm.status = message + ' | Token transferred to escrow! Processing listing...'
+          escrowForm.qrCode = ''
+          escrowForm.deepLink = ''
+          addLog('Token escrowed successfully - processing listing')
+          
+          // Call polling function to update status
+          const pollResult = await apiRequest('/poll-pending-transactions', 'GET')
+          
+          if (pollResult.ok && pollResult.data.success) {
+            escrowForm.status = message + ' | Asset successfully listed for sale!'
+            addLog(`Polling complete: ${pollResult.data.updated} asset(s) updated`)
+          } else {
+            escrowForm.status = message + ' | Asset will be listed shortly (automatic processing)'
+            addLog('Polling failed - asset will be processed automatically')
+          }
+          
+          loadUserAssets()
+          loadMarketplaceAssets()
         }
       } else if (result.data.expired) {
         const expiredMessage = 'Transaction expired'
@@ -449,6 +469,8 @@ const pollTransactionStatus = async (payloadId: string, type: 'purchase' | 'sell
           mintTokenForm.status = expiredMessage
         } else if (type === 'trustline') {
           trustLineForm.status = expiredMessage
+        } else if (type === 'escrow') {
+          escrowForm.status = expiredMessage
         } else if (type === 'escrow') {
           escrowForm.status = expiredMessage
         }
@@ -477,7 +499,7 @@ const createAsset = async () => {
   })
   
   if (result.ok) {
-    const { message, asset, requiresTrustLine, mintTxHash } = result.data
+    const { message, asset, requiresTrustLine } = result.data
     
     addLog(message)
     
@@ -717,7 +739,7 @@ const pollPendingTransactions = async () => {
   const result = await apiRequest('/poll-pending-transactions', 'GET')
   
   if (result.ok && result.data.success) {
-    const { processed, updated, details } = result.data
+    const { processed, updated } = result.data
     
     if (updated > 0) {
       alert(`✅ Processed ${processed} pending transactions, updated ${updated} assets to marketplace`)
@@ -828,7 +850,7 @@ onMounted(() => {
               <p><strong>Price:</strong> {{ asset.price_xrp }} XRP</p>
               <p><strong>Token:</strong> {{ asset.token_currency }} (1 unique token)</p>
               <p><strong>Seller:</strong> {{ asset.seller_address?.substring(0, 8) }}...</p>
-              <p><strong>Listed:</strong> {{ new Date(asset.listed_at).toLocaleDateString() }}</p>
+              <p><strong>Listed:</strong> {{ asset.listed_at ? new Date(asset.listed_at).toLocaleDateString() : 'N/A' }}</p>
               <p><strong>Status:</strong> 🏦 In Escrow</p>
             </div>
             <div class="asset-actions">
@@ -1060,7 +1082,7 @@ onMounted(() => {
               <p><strong>Issuance:</strong> 
                 <span :class="'status-' + (asset.issuance_status || 'not_started')">{{ asset.issuance_status || 'not_started' }}</span>
               </p>
-              <p><strong>Created:</strong> {{ new Date(asset.created_at).toLocaleDateString() }}</p>
+              <p><strong>Created:</strong> {{ asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A' }}</p>
             </div>
             <div class="asset-actions">
               <button 

@@ -118,6 +118,16 @@ Deno.serve(async (req) => {
       }
     })
 
+    if (!payload) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to create XUMM payload' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
     // Update asset status to pending purchase
     await supabase
       .from('assets')

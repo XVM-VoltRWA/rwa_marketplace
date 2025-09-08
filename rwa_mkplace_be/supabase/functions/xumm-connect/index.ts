@@ -55,6 +55,16 @@ Deno.serve(async (req) => {
       options: { submit: false, expire: 300 }
     })
 
+    if (!payload) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to create XUMM payload' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
     const qrCodeDataUrl = await QRCode.toDataURL(`https://xumm.app/sign/${payload.uuid}`)
 
     return new Response(

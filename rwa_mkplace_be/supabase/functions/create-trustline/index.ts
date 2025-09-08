@@ -110,6 +110,16 @@ Deno.serve(async (req) => {
       user_token: holderAddress // This will suggest the holder wallet to sign
     })
 
+    if (!payload) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to create XUMM payload' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      )
+    }
+
     const qrCodeDataUrl = await QRCode.toDataURL(`https://xumm.app/sign/${payload.uuid}`)
 
     return new Response(

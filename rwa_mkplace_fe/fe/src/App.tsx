@@ -1,9 +1,8 @@
+import { RouterProvider } from 'react-router-dom';
+import { router } from './router/index';
+
 function App() {
-  return (
-    <>
-      <p>potato</p>
-    </>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

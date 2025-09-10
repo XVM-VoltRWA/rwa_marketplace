@@ -1,10 +1,10 @@
 /**
  * Basic NFT Creation Endpoint
- * 
+ *
  * Simple NFT minting on XRPL using backend wallet
- * 
+ *
  * Method: POST
- * 
+ *
  * Input:
  * {
  *   name: string,
@@ -12,7 +12,7 @@
  *   owner_address: string,
  *   metadata?: object
  * }
- * 
+ *
  * Output:
  * {
  *   success: boolean,
@@ -50,7 +50,9 @@ Deno.serve(async (req) => {
 
     if (!name || !image_url || !owner_address) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: name, image_url, owner_address" }),
+        JSON.stringify({
+          error: "Missing required fields: name, image_url, owner_address",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -87,6 +89,7 @@ Deno.serve(async (req) => {
     const nftMetadata = {
       name,
       image: image_url,
+      minted_on: new Date(),
       ...(metadata || {}),
     };
 
@@ -117,7 +120,10 @@ Deno.serve(async (req) => {
       autofill: true,
     });
 
-    const txMeta = mintResponse.result.meta as unknown as Record<string, unknown>;
+    const txMeta = mintResponse.result.meta as unknown as Record<
+      string,
+      unknown
+    >;
     const txResult = txMeta?.TransactionResult as string;
 
     if (txResult !== "tesSUCCESS") {
@@ -192,19 +198,19 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Creating transfer offer to owner: ${owner_address}...`);
-    
+
     const transferOffer = {
       TransactionType: "NFTokenCreateOffer" as const,
       Account: wallet.address,
       NFTokenID: nftTokenId,
       Destination: owner_address,
       Amount: "0", // Free transfer
-      Flags: 1 // tfSellToken flag for sell offer
+      Flags: 1, // tfSellToken flag for sell offer
     };
 
     const transferResponse = await client.submit(transferOffer, {
       wallet,
-      autofill: true
+      autofill: true,
     });
 
     let transferTxHash = null;
@@ -213,7 +219,7 @@ Deno.serve(async (req) => {
     let xummQrCode = null;
     let xummDeepLink = null;
     let xummPayloadId = null;
-    
+
     if (transferResponse.result.engine_result === "tesSUCCESS") {
       transferTxHash = transferResponse.result.tx_json.hash;
       transferStatus = "success";
@@ -221,22 +227,24 @@ Deno.serve(async (req) => {
 
       // Get the offer index from the transaction result
       // Wait a moment for the transaction to be validated
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Query for NFT sell offers
       const sellOffersRequest = {
         command: "nft_sell_offers",
-        nft_id: nftTokenId
+        nft_id: nftTokenId,
       };
 
       try {
-        const sellOffersResponse = await client.request(sellOffersRequest as any);
+        const sellOffersResponse = await client.request(
+          sellOffersRequest as any
+        );
         const offers = (sellOffersResponse.result as any).offers || [];
-        
+
         // Find our offer (free transfer to owner_address)
-        const ourOffer = offers.find((offer: any) => 
-          offer.amount === "0" && 
-          offer.destination === owner_address
+        const ourOffer = offers.find(
+          (offer: any) =>
+            offer.amount === "0" && offer.destination === owner_address
         );
 
         if (ourOffer) {
@@ -251,19 +259,21 @@ Deno.serve(async (req) => {
               txjson: {
                 TransactionType: "NFTokenAcceptOffer",
                 Account: owner_address,
-                NFTokenSellOffer: offerIndex
+                NFTokenSellOffer: offerIndex,
               },
               options: {
                 submit: true,
-                expire: 10
-              }
+                expire: 10,
+              },
             });
 
             if (payload) {
               xummPayloadId = payload.uuid;
               xummDeepLink = `https://xumm.app/sign/${payload.uuid}`;
               xummQrCode = await QRCode.toDataURL(xummDeepLink);
-              console.log(`Created XUMM payload for acceptance: ${xummPayloadId}`);
+              console.log(
+                `Created XUMM payload for acceptance: ${xummPayloadId}`
+              );
             }
           }
         }
@@ -271,7 +281,9 @@ Deno.serve(async (req) => {
         console.log("Could not fetch offer index:", err);
       }
     } else {
-      console.log(`Transfer offer failed: ${transferResponse.result.engine_result}`);
+      console.log(
+        `Transfer offer failed: ${transferResponse.result.engine_result}`
+      );
     }
 
     await client.disconnect();
@@ -283,7 +295,9 @@ Deno.serve(async (req) => {
         : "https://testnet.xrpl.org";
 
     const mintExplorerLink = `${explorerBase}/transactions/${txHash}`;
-    const transferExplorerLink = transferTxHash ? `${explorerBase}/transactions/${transferTxHash}` : null;
+    const transferExplorerLink = transferTxHash
+      ? `${explorerBase}/transactions/${transferTxHash}`
+      : null;
 
     const response: any = {
       success: true,
@@ -295,7 +309,7 @@ Deno.serve(async (req) => {
       transfer_status: transferStatus,
       network: NETWORK,
       minter_address: wallet.address,
-      owner_address: owner_address
+      owner_address: owner_address,
     };
 
     // Add XUMM acceptance info if available
@@ -305,23 +319,26 @@ Deno.serve(async (req) => {
         deep_link: xummDeepLink,
         payload_id: xummPayloadId,
         offer_index: offerIndex,
-        instruction: "Scan this QR code with XUMM to accept the NFT transfer"
+        instruction: "Scan this QR code with XUMM to accept the NFT transfer",
       };
-      response.message = "NFT minted! Scan the QR code to accept the transfer to your wallet.";
+      response.message =
+        "NFT minted! Scan the QR code to accept the transfer to your wallet.";
     } else if (transferStatus === "success") {
-      response.message = "NFT minted and transfer offer created! Accept the offer in XUMM manually.";
+      response.message =
+        "NFT minted and transfer offer created! Accept the offer in XUMM manually.";
       response.manual_acceptance = {
         offer_index: offerIndex,
-        instruction: "Open XUMM and look for pending NFT offers to accept this transfer"
+        instruction:
+          "Open XUMM and look for pending NFT offers to accept this transfer",
       };
     } else {
-      response.message = "NFT minted successfully but transfer offer failed. NFT remains with minter.";
+      response.message =
+        "NFT minted successfully but transfer offer failed. NFT remains with minter.";
     }
 
-    return new Response(
-      JSON.stringify(response),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error minting NFT:", error);
     return new Response(

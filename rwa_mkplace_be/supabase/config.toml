@@ -6,6 +6,8 @@
 verify_jwt = false
 [functions.get-assets]
 verify_jwt = false
+[functions.create-nft]
+verify_jwt = false
 
 # Marketplace
 [functions.get-marketplace-assets]

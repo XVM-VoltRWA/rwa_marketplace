@@ -3,15 +3,20 @@
   themes: voltrwa --default;
 }
 
+@theme {
+  --color-secondary-gradient-start: #893ceb;
+  --color-secondary-gradient-end: #3f7ff5;
+}
+
 @plugin "daisyui/theme" {
   name: "voltrwa";
   default: true;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: oklch(0% 0 0);
+  --color-base-100: #0d0d1b;
   --color-base-200: oklch(19% 0 0);
-  --color-base-300: oklch(22% 0 0);
-  --color-base-content: oklch(87.609% 0 0);
+  --color-base-300: #161a29;
+  --color-base-content: #ffffff;
   --color-primary: #29abe2;
   --color-primary-content: oklch(100% 0 0);
   --color-secondary: #021ca4;
@@ -28,9 +33,9 @@
   --color-warning-content: oklch(19.359% 0.042 109.769);
   --color-error: oklch(62.795% 0.257 29.233);
   --color-error-content: oklch(12.559% 0.051 29.233);
-  --radius-selector: 2rem;
-  --radius-field: 2rem;
-  --radius-box: 2rem;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 0.75rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;

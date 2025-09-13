@@ -12,6 +12,6 @@
     "moduleResolution": "node",
     "allowJs": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "include": ["**/*.ts"],
   "exclude": ["node_modules"]
 }

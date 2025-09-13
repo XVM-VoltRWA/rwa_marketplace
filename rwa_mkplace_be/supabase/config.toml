@@ -48,3 +48,7 @@ verify_jwt = false
 # Manual Fix Functions (rarely used)
 [functions.fix-escrow-status]
 verify_jwt = false
+
+[functions.create-nft-v2]
+enabled = true
+verify_jwt = true

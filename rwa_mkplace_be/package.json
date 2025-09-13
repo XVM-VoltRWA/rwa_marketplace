@@ -10,7 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "supabase": "^2.39.2",
     "xrpl": "^4.4.1"
   }
 }

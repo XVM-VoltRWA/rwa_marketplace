@@ -1,13 +1,15 @@
 {
-  "compilerOptions": {
-    "lib": ["deno.window"],
-    "strict": true
-  },
   "imports": {
-    "xrpl": "npm:xrpl@2.7.0",
+    "xrpl": "npm:xrpl@4.4.0",
     "xumm-sdk": "npm:xumm-sdk@1.11.2",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@2",
     "@supabase/functions-js": "jsr:@supabase/functions-js"
   },
-  "lock": false
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "sourceMap": true,
+  "lock": false,
+  "unstable": ["sloppy-imports"]
 }

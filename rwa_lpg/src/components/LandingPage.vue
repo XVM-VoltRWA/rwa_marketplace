@@ -80,9 +80,8 @@ const handleSubmit = async (e: Event) => {
           The Future of Real World Assets on XRP
         </h1>
         <p class="text-lg md:text-xl text-base-content/80 leading-relaxed">
-          Unlock unprecedented liquidity and transparency. Join the revolution
-          that's bridging physical assets with blockchain efficiency on the XRP
-          Ledger.
+          Join the revolution that's bridging physical assets with blockchain
+          efficiency on the XRP Ledger.
         </p>
       </div>
 

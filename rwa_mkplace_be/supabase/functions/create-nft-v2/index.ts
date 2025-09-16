@@ -179,6 +179,7 @@ Deno.serve(async (req) => {
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
 
+Basic NFT creation (requires QR scan or deep link):
 curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft-v2' \
  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
  --header 'Content-Type: application/json' \
@@ -186,9 +187,31 @@ curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nf
 "name": "My NFT Name",
 "image_url": "https://example.com/image.png",
 "metadata": { "note": "mint test" },
-"owner_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D" 
+"owner_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D"
 }'
 
-owner_address: should not be backend wallet
+With XUMM push notifications (sends directly to wallet):
+curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft-v2' \
+ --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+ --header 'Content-Type: application/json' \
+ --data '{
+"name": "My NFT Name",
+"image_url": "https://example.com/image.png",
+"metadata": { "note": "mint test" },
+"owner_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D",
+"xumm_user_token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}'
+
+Notes:
+- owner_address: should not be backend wallet
+- xumm_user_token: optional, obtained from xumm-signin function
+- When xumm_user_token is provided, the NFT accept offer is pushed directly to the user's XUMM wallet
+- Without xumm_user_token, user must scan QR code or click deep link to accept the NFT
+
+To get xumm_user_token:
+1. Call POST /xumm-signin to create sign-in request
+2. User signs in with XUMM wallet
+3. Call GET /xumm-signin?payload_id=<id> to retrieve user token
+4. Use the user token for future push notifications
 
 */

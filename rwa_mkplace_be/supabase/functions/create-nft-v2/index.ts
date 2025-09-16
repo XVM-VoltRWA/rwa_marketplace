@@ -6,10 +6,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Client, Wallet } from "npm:xrpl@4.4.0";
 import NftService from "../_shared/nft/service.ts";
-import config, {
-  getExplorerBase,
-  getNetworkUrl,
-} from "../_shared/config/index.ts";
+import config from "../_shared/config/index.ts";
+import { getExplorerBase, getNetworkUrl } from "../_shared/config/index.ts";
 import type {
   CreateNftRequest,
   CreateNftResponse,

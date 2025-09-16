@@ -3,11 +3,13 @@
  * - uuid: payload identifier used by XUMM APIs
  * - deepLink: URL that opens the payload in XUMM mobile app
  * - qrCodeDataUrl: data URL containing a PNG/svg QR code for the payload
+ * - pushed: indicates if the payload was pushed to the user's XUMM app
  */
 export type XummPayloadResult = {
     uuid: string;
     deepLink: string;
     qrCodeDataUrl: string;
+    pushed?: boolean;
 };
 
 /**
@@ -67,4 +69,30 @@ export type XrplTransactionType = typeof XrplTxTypes[number]
 
 export interface XummJsonTransaction extends Record<string, unknown> {
     TransactionType: XummTransactionType | XrplTransactionType
+}
+
+/**
+ * Sign-in specific payload structure
+ */
+export interface XummSignInPayload {
+    txjson: {
+        TransactionType: "SignIn";
+        Account?: string;
+    };
+    options?: {
+        submit?: boolean;
+        expire?: number;
+    };
+}
+
+/**
+ * Payload status response structure
+ */
+export interface XummPayloadStatus {
+    signed: boolean;
+    resolved: boolean;
+    expired?: boolean;
+    cancelled?: boolean;
+    user_token?: string;
+    wallet_address?: string;
 }

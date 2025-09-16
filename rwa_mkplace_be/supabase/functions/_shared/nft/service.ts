@@ -1,5 +1,5 @@
-import type { Client, TxResponse, Wallet, NFTokenCreateOffer } from "npm:xrpl@4.4.1";
-import { NFTokenMint } from "npm:xrpl@4.4.1";
+import type { Client, TxResponse, Wallet, NFTokenCreateOffer } from "npm:xrpl@4.4.0";
+import { NFTokenMint } from "npm:xrpl@4.4.0";
 import type { MintResult, MintOptions, NFTokenMintMetadata, OfferOptions, OfferResult } from "./type.ts";
 import type { SellOffer } from "./type.ts";
 

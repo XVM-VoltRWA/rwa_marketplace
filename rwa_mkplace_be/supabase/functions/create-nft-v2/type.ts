@@ -4,6 +4,8 @@ export type CreateNftRequest = {
     metadata?: Record<string, unknown>;
     // optional destination address to create a transfer offer for after minting
     owner_address?: string;
+    // optional XUMM user token for push notifications (obtained from previous XUMM sign-in)
+    xumm_user_token?: string;
 };
 
 export type OfferAcceptance = {
@@ -12,6 +14,7 @@ export type OfferAcceptance = {
     qr_code?: string;
     offer_index?: string | null;
     instruction?: string;
+    pushed?: boolean;  // indicates if payload was pushed to user's XUMM app
 };
 
 export type CreateNftResponse = {

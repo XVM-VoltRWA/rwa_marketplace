@@ -12,9 +12,9 @@ interface Asset {
 }
 
 const MyAssets = () => {
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connected, setConnected] = useState(false);
+  const [connected] = useState(false);
 
   useEffect(() => {
     // TODO: Check wallet connection and fetch user assets

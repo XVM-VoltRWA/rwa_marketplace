@@ -11,7 +11,7 @@ interface Asset {
 }
 
 const Marketplace = () => {
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

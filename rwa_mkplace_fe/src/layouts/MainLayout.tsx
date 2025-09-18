@@ -1,32 +1,28 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ROUTES } from "../router/index";
 import { IoIosWallet } from "react-icons/io";
+import { useWalletStore } from "../store/walletStore";
+import { XummSignInModal } from "../components/XummSignInModal";
 
 const MainLayout = () => {
   const location = useLocation();
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [showSignInModal, setShowSignInModal] = useState(false);
 
-  useEffect(() => {
-    // Check for stored wallet connection
-    const stored = localStorage.getItem("rwa-wallet");
-    if (stored) {
-      const walletData = JSON.parse(stored);
-      setWalletConnected(true);
-      setWalletAddress(walletData.address);
-    }
-  }, []);
+  // Get wallet state from Zustand store
+  const {
+    isConnected,
+    walletAddress,
+    xummUserToken,
+    disconnect
+  } = useWalletStore();
 
-  const connectWallet = () => {
-    // TODO: Implement wallet connection
-    console.log("Connecting wallet...");
+  const handleConnect = () => {
+    setShowSignInModal(true);
   };
 
-  const disconnectWallet = () => {
-    setWalletConnected(false);
-    setWalletAddress("");
-    localStorage.removeItem("rwa-wallet");
+  const handleDisconnect = () => {
+    disconnect();
   };
 
   const navItems = [
@@ -67,7 +63,7 @@ const MainLayout = () => {
 
             {/* Wallet connection */}
             <div className="flex items-center space-x-4">
-              {walletConnected ? (
+              {isConnected && walletAddress ? (
                 <div className="dropdown dropdown-end">
                   <label
                     tabIndex={0}
@@ -83,8 +79,18 @@ const MainLayout = () => {
                     tabIndex={0}
                     className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-2"
                   >
+                    {xummUserToken && (
+                      <li>
+                        <div className="text-xs text-success pointer-events-none">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          XUMM Push Enabled
+                        </div>
+                      </li>
+                    )}
                     <li>
-                      <button onClick={disconnectWallet} className="text-error">
+                      <button onClick={handleDisconnect} className="text-error">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-5 w-5"
@@ -105,7 +111,7 @@ const MainLayout = () => {
                   </ul>
                 </div>
               ) : (
-                <button onClick={connectWallet} className="btn btn-primary btn-sm">
+                <button onClick={handleConnect} className="btn btn-primary btn-sm">
                   Connect Wallet
                 </button>
               )}
@@ -140,10 +146,16 @@ const MainLayout = () => {
       <footer className="bg-base-200 border-t border-base-300 mt-12">
         <div className="container mx-auto px-4 py-6">
           <p className="text-center text-sm text-base-content/60">
-            © 2024 RWA Marketplace. Built on XRPL.
+            © {new Date().getFullYear()} RWA Marketplace. Built on XRPL.
           </p>
         </div>
       </footer>
+
+      {/* XUMM Sign-In Modal */}
+      <XummSignInModal
+        isOpen={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
     </div>
   );
 };

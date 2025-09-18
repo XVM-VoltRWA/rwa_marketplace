@@ -3,3 +3,6 @@
 
 [functions.create-nft-v2]
 verify_jwt = false
+
+[functions.xumm-signin]
+verify_jwt = false

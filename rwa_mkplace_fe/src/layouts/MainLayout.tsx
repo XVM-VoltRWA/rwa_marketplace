@@ -13,7 +13,6 @@ const MainLayout = () => {
   const {
     isConnected,
     walletAddress,
-    xummUserToken,
     disconnect
   } = useWalletStore();
 
@@ -77,20 +76,10 @@ const MainLayout = () => {
                   </label>
                   <ul
                     tabIndex={0}
-                    className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-2"
+                    className="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-200 border border-base-300 rounded-box w-52 mt-2"
                   >
-                    {xummUserToken && (
-                      <li>
-                        <div className="text-xs text-success pointer-events-none">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          XUMM Push Enabled
-                        </div>
-                      </li>
-                    )}
                     <li>
-                      <button onClick={handleDisconnect} className="text-error">
+                      <button onClick={handleDisconnect} className="text-error hover:bg-error/10">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-5 w-5"
@@ -111,7 +100,7 @@ const MainLayout = () => {
                   </ul>
                 </div>
               ) : (
-                <button onClick={handleConnect} className="btn btn-primary btn-sm">
+                <button onClick={handleConnect} className="btn btn-primary text-sm">
                   Connect Wallet
                 </button>
               )}

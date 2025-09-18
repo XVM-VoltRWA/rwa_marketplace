@@ -96,12 +96,12 @@ export const XummSignInModal = ({ isOpen, onClose }: XummSignInModalProps) => {
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box max-w-md">
+      <div className="modal-box max-w-md bg-base-100 shadow-2xl border border-base-300">
         <h3 className="font-bold text-lg mb-4">Connect XUMM Wallet</h3>
 
         {/* Close button */}
         <button
-          className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+          className="btn btn-circle btn-ghost absolute right-3 top-3 text-xl"
           onClick={onClose}
         >
           ✕
@@ -165,15 +165,10 @@ export const XummSignInModal = ({ isOpen, onClose }: XummSignInModalProps) => {
           )}
         </div>
 
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-        </div>
       </div>
 
       {/* Modal backdrop */}
-      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+      <form method="dialog" className="modal-backdrop bg-black/60" onClick={onClose}>
         <button>close</button>
       </form>
     </dialog>

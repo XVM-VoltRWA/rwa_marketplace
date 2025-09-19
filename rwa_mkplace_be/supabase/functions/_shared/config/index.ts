@@ -21,11 +21,25 @@ const cfg: EnvConfig = {
 export function getNetworkUrl(network = cfg.NETWORK) {
     return network === "mainnet"
         ? "wss://xrplcluster.com"
-        : "wss://s.altnet.rippletest.net:51233";
+        : "wss://s.altnet.rippletest.net:51233/";
+}
+
+export function getClioUrl(network = cfg.NETWORK) {
+    return network === "mainnet"
+        // TODO: fill this after setup Clio mainnet instance
+        ? ""
+        : "https://clio.altnet.rippletest.net:50051";
 }
 
 export function getExplorerBase(network = cfg.NETWORK) {
     return network === "mainnet" ? "https://livenet.xrpl.org" : "https://testnet.xrpl.org";
+}
+
+export function getClientOptions() {
+    return {
+        timeout: 60_000,
+        connectionTimeout: 60_000,
+    };
 }
 
 export default cfg;

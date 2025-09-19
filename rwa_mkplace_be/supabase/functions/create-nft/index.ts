@@ -7,7 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Client, Wallet } from "npm:xrpl@4.4.0";
 import NftService from "../_shared/nft/service.ts";
 import config from "../_shared/config/index.ts";
-import { getExplorerBase, getNetworkUrl } from "../_shared/config/index.ts";
+import { getExplorerBase, getNetworkUrl, getClientOptions } from "../_shared/config/index.ts";
 import type {
   CreateNftRequest,
   CreateNftResponse,
@@ -21,7 +21,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-console.log("create-nft-v2: starting function");
+console.log("create-nft: starting function");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,8 +60,10 @@ Deno.serve(async (req) => {
       "XUMM API key/secret not configured; skipping XUMM payload creation"
     );
 
-  const client = new Client(getNetworkUrl(config.NETWORK));
+  const client = new Client(getNetworkUrl(config.NETWORK), getClientOptions());
+  console.log("Connecting to XRPL network...");
   await client.connect();
+  console.log("Connected to XRPL network");
   const backendWallet = Wallet.fromSeed(config.BACKEND_WALLET_SEED);
   const nftService = new NftService(client, backendWallet);
   const xummService = new XummService(
@@ -77,16 +79,19 @@ Deno.serve(async (req) => {
       metadata: metadata || {},
     });
 
+    console.log("Mint result:", mintResult);
+
     const response: CreateNftResponse = {
       success: true,
       nft_token_id: mintResult.nftTokenId,
       mint_transaction_hash: mintResult.txHash,
-      mint_explorer_link: `${getExplorerBase(config.NETWORK)}/transactions/${
-        mintResult.txHash
-      }`,
+      mint_explorer_link: `${getExplorerBase(config.NETWORK)}/transactions/${mintResult.txHash
+        }`,
       network: config.NETWORK,
       minter_address: backendWallet.address,
     };
+
+    console.log("Minted NFT:", mintResult);
 
     // If owner_address provided, create a transfer offer and optionally build XUMM payload (edge handles XUMM SDK/QR)
     if (owner_address) {
@@ -118,6 +123,8 @@ Deno.serve(async (req) => {
             600,
             xumm_user_token
           );
+
+          console.log("Created XUMM payload:", payload);
 
           if (payload) {
             const acceptance: OfferAcceptance = {
@@ -180,18 +187,18 @@ Deno.serve(async (req) => {
   2. Make an HTTP request:
 
 Basic NFT creation (requires QR scan or deep link):
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft-v2' \
+curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft' \
  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
  --header 'Content-Type: application/json' \
  --data '{
 "name": "My NFT Name",
 "image_url": "https://example.com/image.png",
 "metadata": { "note": "mint test" },
-"owner_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D"
+"owner_address": "rw2evNG3ZiMxHV1RVip5bMEC3fk4vjkrRN"
 }'
 
 With XUMM push notifications (sends directly to wallet):
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft-v2' \
+curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft' \
  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
  --header 'Content-Type: application/json' \
  --data '{
@@ -199,7 +206,7 @@ curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nf
 "image_url": "https://example.com/image.png",
 "metadata": { "note": "mint test" },
 "owner_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D",
-"xumm_user_token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+"xumm_user_token": "4da426e7-ade8-4bda-821d-098cac67feac" 
 }'
 
 Notes:

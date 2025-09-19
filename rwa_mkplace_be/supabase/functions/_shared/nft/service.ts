@@ -1,7 +1,6 @@
 import type { Client, TxResponse, Wallet, NFTokenCreateOffer } from "npm:xrpl@4.4.0";
 import { NFTokenMint } from "npm:xrpl@4.4.0";
-import type { MintResult, MintOptions, NFTokenMintMetadata, OfferOptions, OfferResult } from "./type.ts";
-import type { SellOffer } from "./type.ts";
+import type { MintResult, MintOptions, NFTokenMintMetadata, OfferOptions, OfferResult, SellOffer, BuyOffer } from "./type.ts";
 
 /**
  * NftService - small helper around XRPL NFToken minting.
@@ -159,6 +158,74 @@ export class NftService {
     }
 
     /**
+     * Create an NFTokenCreateOffer (sell or buy offer) for the given NFT.
+     *
+     * This method submits an NFTokenCreateOffer transaction and then attempts to
+     * discover the created offer index by polling the ledger via `fetchSellOffers`
+     * or `fetchBuyOffers`.
+     *
+     * Returns the offer index on success or null when the offer could not be found.
+     *
+     * Errors: throws if the create offer transaction fails or if fetching the
+     * offer index encounters an unexpected error.
+     *
+     * @param nftTokenId NFTokenID to create an offer for.
+     * @param type "sell" or "buy" to specify the offer type.
+     * @param destination For sell: recipient address; for buy: owner (seller) address.
+     * @param opts Offer options (amount, flags).
+     * @returns Promise resolving to the offer index string or null if not found.
+     */
+    async createOffer(
+        nftTokenId: string,
+        type: "sell" | "buy",
+        userAddress: string,
+        destination: string,
+        opts: OfferOptions = {}
+    ): Promise<string | null> {
+        const { amount = "0", flags } = opts;
+
+        if (Number(amount) <= 0) {
+            throw new Error("Amount must be a non-negative number and non-zero");
+        }
+
+        const createOffer: NFTokenCreateOffer = {
+            TransactionType: "NFTokenCreateOffer",
+            Account: userAddress,
+            NFTokenID: nftTokenId,
+            Amount: amount,
+            ...(type === "sell" ? { Destination: destination, Flags: flags ?? 1 } : { Owner: destination, Flags: flags ?? 0 }),
+        };
+
+        const response = await this.client.submit(createOffer, {
+            autofill: true,
+        });
+
+        if (response.result.engine_result !== "tesSUCCESS") {
+            throw new Error("Offer creation failed: " + response.id + " - " + response.result.engine_result);
+        }
+
+        try {
+            if (type === "sell") {
+                const offers: SellOffer[] = await this.fetchSellOffers(nftTokenId);
+                const ourOffer = offers.find((offer) => offer.amount === amount && offer.destination === destination);
+                if (ourOffer) {
+                    return ourOffer.nft_offer_index || null;
+                }
+            } else {
+                const offers: BuyOffer[] = await this.fetchBuyOffers(nftTokenId);
+                const ourOffer = offers.find((offer) => offer.amount === amount && offer.owner === destination);
+                if (ourOffer) {
+                    return ourOffer.nft_offer_index || null;
+                }
+            }
+        } catch (err) {
+            throw new Error("Could not fetch offer index: " + String(err));
+        }
+
+        return null;
+    }
+
+    /**
      *  This attempts to extract the NFTokenID from the transaction metadata in a robust way.
     *
     * The helper scans multiple shapes of transaction metadata (CreatedNode,
@@ -267,6 +334,34 @@ export class NftService {
             if (inner && typeof inner === "object") {
                 const offersRaw = (inner as Record<string, unknown>)["offers"];
                 if (Array.isArray(offersRaw)) return offersRaw as SellOffer[];
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Fetch NFT buy offers for a given NFTokenID using the connected xrpl client.
+     *
+     * This method calls the `nft_buy_offers` ledger command and returns a
+     * simplified array of BuyOffer entries (amount, owner, nft_offer_index).
+     *
+     * It tolerates variations in the XRPL client response shape and returns an
+     * empty array if no offers are found. Any unexpected request errors will
+     * propagate to the caller.
+     *
+     * @param nftTokenId The NFTokenID to query buy offers for.
+     * @returns Array of BuyOffer objects (may be empty).
+     */
+    public async fetchBuyOffers(nftTokenId: string): Promise<BuyOffer[]> {
+        const buyOffersRequest = { command: "nft_buy_offers", nft_id: nftTokenId } as unknown;
+        // attempt request using the xrpl client typing at runtime
+        const resp = await (this.client as unknown as { request: (r: unknown) => Promise<unknown> }).request(buyOffersRequest);
+        const maybe = resp as unknown as Record<string, unknown>;
+        if (maybe && typeof maybe === "object") {
+            const inner = maybe["result"] as unknown;
+            if (inner && typeof inner === "object") {
+                const offersRaw = (inner as Record<string, unknown>)["offers"];
+                if (Array.isArray(offersRaw)) return offersRaw as BuyOffer[];
             }
         }
         return [];

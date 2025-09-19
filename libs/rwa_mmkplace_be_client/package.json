@@ -1,0 +1,40 @@
+{
+  "name": "rwa-marketplace-be-client",
+  "version": "1.0.0",
+  "description": "Axios wrapper client for RWA Marketplace Backend functions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "marketplace": "ts-node tests/marketplace-flow.ts"
+  },
+  "keywords": [
+    "rwa",
+    "marketplace",
+    "xrpl",
+    "nft",
+    "client",
+    "axios",
+    "wrapper"
+  ],
+  "author": "RWA Marketplace Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

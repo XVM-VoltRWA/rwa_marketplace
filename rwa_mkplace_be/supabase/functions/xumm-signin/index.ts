@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
       const xummService = new XummService(config.XUMM_API_KEY, config.XUMM_API_SECRET);
       const status = await xummService.getPayloadStatus(payloadId);
 
+      console.log("Payload status:", status);
+
       const response: SignInStatusResponse = {
         success: true,
         payload_id: payloadId,
@@ -133,11 +135,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = (await req.json()) as SignInRequest;
+    const body: SignInRequest = await req.json();
     const { wallet_address } = body;
+
 
     if (!config.XUMM_API_KEY || !config.XUMM_API_SECRET) {
       throw new Error("XUMM credentials not configured");
+    }
+
+    if (!wallet_address) {
+      throw new Error("Missing required field: wallet_address");
     }
 
     const xummService = new XummService(config.XUMM_API_KEY, config.XUMM_API_SECRET);
@@ -172,3 +179,17 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+/**
+ * XUMM payload creation and status checking service.
+  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/xumm-signin' \
+  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "wallet_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D"
+  }'
+
+
+  curl -i --location --request GET 'http://127.0.0.1:54321/functions/v1/xumm-signin?payload_id=6aa7dd29-4984-4b37-b3b9-592e9cf4329b' \
+  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+ */

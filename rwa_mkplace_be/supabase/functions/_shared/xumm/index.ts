@@ -115,7 +115,6 @@ export class XummService {
     async getPayloadStatus(payloadId: string): Promise<XummPayloadStatus> {
         const xumm = new XummSdk(this.apiKey, this.apiSecret);
 
-        // @ts-ignore: SDK typing mismatch in this environment
         const payload = await xumm.payload.get(payloadId);
 
         if (!payload) {

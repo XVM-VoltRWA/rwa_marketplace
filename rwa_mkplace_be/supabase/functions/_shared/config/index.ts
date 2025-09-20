@@ -8,6 +8,8 @@ export type EnvConfig = {
     NETWORK: string;
     XUMM_API_KEY: string | undefined;
     XUMM_API_SECRET: string | undefined;
+    JWT_SECRET: string | undefined;
+    SESSION_TIMEOUT: number;
 };
 
 const cfg: EnvConfig = {
@@ -16,6 +18,8 @@ const cfg: EnvConfig = {
     NETWORK: Deno.env.get("NETWORK") ?? "testnet",
     XUMM_API_KEY: Deno.env.get("XUMM_API_KEY") ?? undefined,
     XUMM_API_SECRET: Deno.env.get("XUMM_API_SECRET") ?? undefined,
+    JWT_SECRET: Deno.env.get("JWT_SECRET") ?? undefined,
+    SESSION_TIMEOUT: Number(Deno.env.get("SESSION_TIMEOUT") ?? "3600"),
 };
 
 export function getNetworkUrl(network = cfg.NETWORK) {

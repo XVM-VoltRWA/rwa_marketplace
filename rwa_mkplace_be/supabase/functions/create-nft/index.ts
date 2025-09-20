@@ -14,6 +14,8 @@ import type {
   OfferAcceptance,
 } from "./type.ts";
 import XummService from "../_shared/xumm/index.ts";
+import { withAuth } from "../_shared/middleware/auth.ts";
+import type { JwtPayload } from "../_shared/auth/type.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +25,7 @@ const corsHeaders = {
 
 console.log("create-nft: starting function");
 
-Deno.serve(async (req) => {
+const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -36,8 +38,22 @@ Deno.serve(async (req) => {
   }
 
   // typed input
-  const body = (await req.json()) as CreateNftRequest;
-  const { name, image_url, metadata, owner_address, xumm_user_token } = body;
+  const body: CreateNftRequest = await req.json();
+  let { name, image_url, metadata, owner_address, xumm_user_token } = body;
+
+  // Prefer push_token from authenticated session, if available
+  if (!xumm_user_token && ctx.user && typeof ctx.user.push_token === "string") {
+    xumm_user_token = ctx.user.push_token;
+  }
+
+  // If an authenticated session exists, ensure owner_address matches session
+  if (ctx.user && owner_address && owner_address !== ctx.user.sub) {
+    return new Response(
+      JSON.stringify({ success: false, error: "owner_address does not match authenticated session wallet" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   if (!name || !image_url) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: name, image_url" }),
@@ -48,28 +64,15 @@ Deno.serve(async (req) => {
     );
   }
 
-  if (!config.BACKEND_WALLET_SEED)
-    throw new Error("Backend wallet seed not configured");
-  if (!config.XUMM_API_KEY)
-    throw new Error(
-      "XUMM API key/secret not configured; skipping XUMM payload creation"
-    );
-
-  if (!config.XUMM_API_SECRET)
-    throw new Error(
-      "XUMM API key/secret not configured; skipping XUMM payload creation"
-    );
+  if (!config.BACKEND_WALLET_SEED) throw new Error("Backend wallet seed not configured");
+  if (!config.XUMM_API_KEY) throw new Error("XUMM API key/secret not configured; skipping XUMM payload creation");
+  if (!config.XUMM_API_SECRET) throw new Error("XUMM API key/secret not configured; skipping XUMM payload creation");
 
   const client = new Client(getNetworkUrl(config.NETWORK), getClientOptions());
-  console.log("Connecting to XRPL network...");
   await client.connect();
-  console.log("Connected to XRPL network");
   const backendWallet = Wallet.fromSeed(config.BACKEND_WALLET_SEED);
   const nftService = new NftService(client, backendWallet);
-  const xummService = new XummService(
-    config.XUMM_API_KEY,
-    config.XUMM_API_SECRET
-  );
+  const xummService = new XummService(config.XUMM_API_KEY, config.XUMM_API_SECRET);
 
   try {
     // Mint using shared service
@@ -78,20 +81,14 @@ Deno.serve(async (req) => {
       imageUrl: image_url,
       metadata: metadata || {},
     });
-
-    console.log("Mint result:", mintResult);
-
     const response: CreateNftResponse = {
       success: true,
       nft_token_id: mintResult.nftTokenId,
       mint_transaction_hash: mintResult.txHash,
-      mint_explorer_link: `${getExplorerBase(config.NETWORK)}/transactions/${mintResult.txHash
-        }`,
+      mint_explorer_link: `${getExplorerBase(config.NETWORK)}/transactions/${mintResult.txHash}`,
       network: config.NETWORK,
       minter_address: backendWallet.address,
     };
-
-    console.log("Minted NFT:", mintResult);
 
     // If owner_address provided, create a transfer offer and optionally build XUMM payload (edge handles XUMM SDK/QR)
     if (owner_address) {
@@ -114,23 +111,16 @@ Deno.serve(async (req) => {
         config.XUMM_API_SECRET
       ) {
         try {
-          const payload = await xummService.createXummPayload(
-            {
-              TransactionType: "NFTokenAcceptOffer",
-              Account: owner_address,
-              NFTokenSellOffer: giveNftToCreatorResult.offerIndex,
-            },
-            600,
-            xumm_user_token
-          );
-
-          console.log("Created XUMM payload:", payload);
+          const payload = await xummService.createAcceptOfferPayload(owner_address, giveNftToCreatorResult.offerIndex);
+          if (!payload) {
+            throw new Error("Failed to create XUMM payload");
+          }
+          const enriched = await xummService.enrichPayload(payload);
 
           if (payload) {
             const acceptance: OfferAcceptance = {
               payload_id: payload.uuid,
-              deep_link: payload.deepLink,
-              qr_code: payload.qrCodeDataUrl,
+              deep_link: enriched.deepLink,
               offer_index: giveNftToCreatorResult.offerIndex,
               pushed: payload.pushed,
               instruction: payload.pushed
@@ -144,42 +134,31 @@ Deno.serve(async (req) => {
           }
         } catch (err) {
           console.error("Failed to create XUMM payload:", err);
-          response.message =
-            "NFT minted and transfer offer created. Could not prepare XUMM payload.";
+          response.message = "NFT minted and transfer offer created. Could not prepare XUMM payload.";
         }
-      } else if (
-        giveNftToCreatorResult &&
-        giveNftToCreatorResult.transferTxHash
-      ) {
-        response.message =
-          "NFT minted and transfer offer created. Accept the offer in XUMM manually.";
+      } else if (giveNftToCreatorResult && giveNftToCreatorResult.transferTxHash) {
+        response.message = "NFT minted and transfer offer created. Accept the offer in XUMM manually.";
         response.manual_acceptance = {
           offer_index: giveNftToCreatorResult.offerIndex,
-          instruction:
-            "Open XUMM and look for pending NFT offers to accept this transfer",
+          instruction: "Open XUMM and look for pending NFT offers to accept this transfer",
         };
       }
     }
 
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify(response), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     console.error("create-nft error:", err);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: false, error: err instanceof Error ? err.message : String(err) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } finally {
     client.disconnect();
   }
-});
+};
+
+// Export the wrapped handler (optional auth)
+Deno.serve(withAuth(handler, { required: true }));
 
 /* To invoke locally:
 
@@ -188,14 +167,26 @@ Deno.serve(async (req) => {
 
 Basic NFT creation (requires QR scan or deep link):
 curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft' \
+ --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJydzJldk5HM1ppTXhIVjFSVmlwNWJNRUMzZms0dmprclJOIiwiaWF0IjoxNzU4Mzc0OTM3LCJleHAiOjE3NTgzNzg1MzcsInB1c2hfdG9rZW4iOiI0ZGE0MjZlNy1hZGU4LTRiZGEtODIxZC0wOThjYWM2N2ZlYWMifQ.s8T3pxfV6fab8SQBXuZUfKn6HRsdFYtBS9I20jcZD8o' \
+ --header 'Content-Type: application/json' \
+ --data '{
+"name": "mint test 123",
+"image_url": "https://example.com/image.png",
+"metadata": { "note": "mint test 123" },
+"owner_address": "rw2evNG3ZiMxHV1RVip5bMEC3fk4vjkrRN"
+}'
+
+
+curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft' \
  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
  --header 'Content-Type: application/json' \
  --data '{
-"name": "My NFT Name",
+"name": "mint test 123",
 "image_url": "https://example.com/image.png",
-"metadata": { "note": "mint test" },
+"metadata": { "note": "mint test 123" },
 "owner_address": "rw2evNG3ZiMxHV1RVip5bMEC3fk4vjkrRN"
 }'
+
 
 With XUMM push notifications (sends directly to wallet):
 curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-nft' \

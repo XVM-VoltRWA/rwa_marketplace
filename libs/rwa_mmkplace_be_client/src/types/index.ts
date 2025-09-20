@@ -93,6 +93,7 @@ export interface SignInStatusResponse {
     expired?: boolean;
     cancelled?: boolean;
     error?: string;
+    hex?: string;
 }
 
 // Client Configuration Types

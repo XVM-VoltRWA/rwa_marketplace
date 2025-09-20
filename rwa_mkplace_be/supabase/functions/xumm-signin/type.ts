@@ -26,4 +26,5 @@ export type SignInStatusResponse = {
     expired?: boolean;
     cancelled?: boolean;
     error?: string;
+    hex?: string;
 };

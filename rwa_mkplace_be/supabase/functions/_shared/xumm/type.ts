@@ -95,4 +95,6 @@ export interface XummPayloadStatus {
     cancelled?: boolean;
     user_token?: string;
     wallet_address?: string;
+    // the raw hex of the transaction, anyone can verify it on the with (verify-xrpl-signature)[https://www.npmjs.com/package/verify-xrpl-signature]
+    hex?: string;
 }

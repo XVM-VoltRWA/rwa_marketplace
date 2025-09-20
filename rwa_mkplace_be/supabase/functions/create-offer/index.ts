@@ -7,6 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Client, NFTokenCreateOffer, Wallet } from "npm:xrpl@4.4.0";
 import config from "../_shared/config/index.ts";
 import { getNetworkUrl, getClientOptions, getClioUrl } from "../_shared/config/index.ts";
+import { NFTOfferService } from "../_shared/nftOffer/index.ts";
 import type {
   CreateOfferRequest,
   CreateOfferResponse,
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
     config.XUMM_API_KEY,
     config.XUMM_API_SECRET
   );
+  const offerService = new NFTOfferService();
 
   try {
     let owner: string | undefined;
@@ -118,6 +120,25 @@ Deno.serve(async (req) => {
     );
 
     if (payload) {
+      // Store the offer in the database using the service
+      try {
+        await offerService.createOffer({
+          nft_token_id,
+          offer_type: type as 'sell' | 'buy',
+          user_address,
+          amount,
+          owner_address: owner,
+          payload_id: payload.uuid,
+          deep_link: payload.deepLink,
+          qr_code: payload.qrCodeDataUrl,
+          pushed: payload.pushed
+        });
+        console.log(`Stored offer in database with payload_id: ${payload.uuid}`);
+      } catch (dbError) {
+        console.error('Failed to store offer in database:', dbError);
+        // Continue with response even if DB storage fails
+      }
+
       const response: CreateOfferResponse = {
         success: true,
         payload_id: payload.uuid,

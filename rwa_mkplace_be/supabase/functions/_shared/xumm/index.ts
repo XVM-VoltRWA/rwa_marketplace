@@ -4,12 +4,40 @@
  * callers can decide how/where to execute the SDK call (honoring environment limits).
  *
  * */
-import { XummSdk } from "npm:xumm-sdk@1.11.2";
+import { XummSdk, SdkTypes } from "npm:xumm-sdk@1.11.2";
 import QRCode from "npm:qrcode@1.5.3";
 import { XummJsonTransaction, XummPayloadBody, XummPayloadResult, XummSignInPayload, XummPayloadStatus } from "./type.ts";
 
 export class XummService {
     public constructor(private apiKey: string, private apiSecret: string) {
+    }
+
+    // Create a new XummSdk instance for each operation.
+    private sdk(): XummSdk {
+        return new XummSdk(this.apiKey, this.apiSecret);
+    }
+
+    // Map SDK payload into our simple result shape and generate QR code.
+    private async mapPayloadResult(payload: unknown): Promise<XummPayloadResult> {
+        if (!payload || typeof payload !== "object") throw new Error("Failed to create XUMM payload");
+
+        const p = payload as Record<string, unknown>;
+
+        const rawUuid = p["uuid"];
+        if (rawUuid === undefined || rawUuid === null) throw new Error("Payload missing uuid");
+
+        const uuid = String(rawUuid);
+        const deepLink = `https://xumm.app/sign/${uuid}`;
+        const qrCodeDataUrl = await QRCode.toDataURL(deepLink);
+
+        const pushed = Boolean(p["pushed"]);
+
+        return {
+            uuid,
+            deepLink,
+            qrCodeDataUrl,
+            pushed
+        };
     }
     /**
      * Build a payload body that can be passed to Xumm SDK's payload.create.
@@ -32,18 +60,16 @@ export class XummService {
         expireSeconds = 600,
         userToken?: string
     ): Promise<XummPayloadResult> {
-        const xumm = new XummSdk(this.apiKey, this.apiSecret);
+        const xumm = this.sdk();
 
-        // Build payload configuration
         const payloadConfig: XummPayloadBody & { user_token?: string } = {
-            txjson: txjson,
+            txjson,
             options: {
                 submit: true,
                 expire: expireSeconds
             }
         };
 
-        // Add user token if provided to enable push notification
         if (userToken) {
             payloadConfig.user_token = userToken;
             console.log("Creating XUMM payload with push notification for user token");
@@ -51,25 +77,12 @@ export class XummService {
 
         // @ts-ignore: SDK typing mismatch in this environment; runtime payload body is valid
         const payload = await xumm.payload.create(payloadConfig);
-        if (!payload) throw new Error("Failed to create XUMM payload");
 
-        const uuid = payload.uuid;
-        const deepLink = `https://xumm.app/sign/${uuid}`;
-        const qrCodeDataUrl = await QRCode.toDataURL(deepLink);
+        const result = await this.mapPayloadResult(payload);
 
-        // Check if push notification was sent successfully
-        const pushed: boolean = Boolean(payload.pushed);
+        if (result.pushed) console.log(`Push notification sent successfully for payload ${result.uuid}`);
 
-        if (pushed) {
-            console.log(`Push notification sent successfully for payload ${uuid}`);
-        }
-
-        return {
-            uuid,
-            deepLink,
-            qrCodeDataUrl,
-            pushed
-        };
+        return result;
     }
 
     /**
@@ -77,7 +90,7 @@ export class XummService {
      * Returns payload details including QR code for user to scan.
      */
     async createSignInPayload(walletAddress?: string): Promise<XummPayloadResult> {
-        const xumm = new XummSdk(this.apiKey, this.apiSecret);
+        const xumm = this.sdk();
 
         const signInPayload: XummSignInPayload = {
             txjson: {
@@ -85,47 +98,38 @@ export class XummService {
             },
             options: {
                 submit: false,
-                expire: 600  // 10 minutes
+                expire: 600 // 10 minutes
             }
         };
 
-        if (walletAddress) {
-            signInPayload.txjson.Account = walletAddress;
-        }
+        if (walletAddress) signInPayload.txjson.Account = walletAddress;
 
         // @ts-ignore: SDK typing mismatch in this environment
         const payload = await xumm.payload.create(signInPayload);
-        if (!payload) throw new Error("Failed to create sign-in payload");
 
-        const uuid = payload.uuid;
-        const deepLink = `https://xumm.app/sign/${uuid}`;
-        const qrCodeDataUrl = await QRCode.toDataURL(deepLink);
-
-        return {
-            uuid,
-            deepLink,
-            qrCodeDataUrl,
-            pushed: Boolean(payload.pushed)
-        };
+        return this.mapPayloadResult(payload);
     }
 
     /**
      * Get the status of a XUMM payload and retrieve user token if signed.
      */
     async getPayloadStatus(payloadId: string): Promise<XummPayloadStatus> {
-        const xumm = new XummSdk(this.apiKey, this.apiSecret);
+        const xumm = this.sdk();
 
-        const payload = await xumm.payload.get(payloadId);
+        const payload: SdkTypes.XummPayload | null = await xumm.payload.get(payloadId);
 
-        if (!payload) {
-            throw new Error("Payload not found");
-        }
+        if (!payload) throw new Error("Payload not found");
+
+        const meta = payload.meta;
+
+        console.log("hex: ", payload.meta);
 
         return {
-            signed: payload.meta.signed,
-            resolved: payload.meta.resolved,
-            expired: payload.meta.expired,
-            cancelled: payload.meta.cancelled,
+            hex: payload.response?.hex || undefined,
+            signed: Boolean(meta?.signed),
+            resolved: Boolean(meta?.resolved),
+            expired: Boolean(meta?.expired),
+            cancelled: Boolean(meta?.cancelled),
             user_token: payload.application?.issued_user_token || undefined,
             wallet_address: payload.response?.account || undefined
         };

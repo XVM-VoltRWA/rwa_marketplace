@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
         payload_id: payloadId,
         signed: status.signed,
         status: status.resolved ? "resolved" : "pending",
+        hex: status.hex,
         message: ""
       };
 
@@ -149,6 +150,7 @@ Deno.serve(async (req) => {
 
     const xummService = new XummService(config.XUMM_API_KEY, config.XUMM_API_SECRET);
     const payload = await xummService.createSignInPayload(wallet_address);
+
 
     const response: SignInResponse = {
       success: true,

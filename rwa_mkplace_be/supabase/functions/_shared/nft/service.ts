@@ -1,6 +1,6 @@
-import type { Client, TxResponse, Wallet, NFTokenCreateOffer } from "npm:xrpl@4.4.0";
+import type { Client, TxResponse, Wallet, NFTokenCreateOffer, NFTSellOffersRequest, NFTSellOffersResponse, NFTBuyOffersRequest, NFTBuyOffersResponse, NFTOffer } from "npm:xrpl@4.4.0";
 import { NFTokenMint } from "npm:xrpl@4.4.0";
-import type { MintResult, MintOptions, NFTokenMintMetadata, OfferOptions, OfferResult, SellOffer, BuyOffer } from "./type.ts";
+import type { MintResult, MintOptions, NFTokenMintMetadata, OfferOptions, OfferResult } from "./type.ts";
 
 /**
  * NftService - small helper around XRPL NFToken minting.
@@ -57,7 +57,7 @@ export class NftService {
         const useWallet = wallet ?? this.backendWallet;
 
         const nftMint: NFTokenMint = {
-            TransactionType: "NFTokenMint" as const,
+            TransactionType: "NFTokenMint",
             Account: useWallet.address,
             URI: metadataHex,
             Flags: flags,
@@ -80,7 +80,7 @@ export class NftService {
             throw new Error(`Mint failed: ${String(txResult)}`);
         }
 
-        const txHash = mintResponse.result.hash as string;
+        const txHash = mintResponse.result.hash;
 
         // Extract token id (robustly)
         const nftTokenId = NftService.extractTokenIdFromMeta(txMeta);
@@ -142,7 +142,7 @@ export class NftService {
         }
 
         try {
-            const offers: SellOffer[] = await this.fetchSellOffers(nftTokenId);
+            const offers = await this.fetchSellOffers(nftTokenId);
             const ourOffer = offers.find((offer) => offer.amount === amount && offer.destination === destination);
             if (ourOffer) {
                 return {
@@ -206,13 +206,13 @@ export class NftService {
 
         try {
             if (type === "sell") {
-                const offers: SellOffer[] = await this.fetchSellOffers(nftTokenId);
+                const offers = await this.fetchSellOffers(nftTokenId);
                 const ourOffer = offers.find((offer) => offer.amount === amount && offer.destination === destination);
                 if (ourOffer) {
                     return ourOffer.nft_offer_index || null;
                 }
             } else {
-                const offers: BuyOffer[] = await this.fetchBuyOffers(nftTokenId);
+                const offers = await this.fetchBuyOffers(nftTokenId);
                 const ourOffer = offers.find((offer) => offer.amount === amount && offer.owner === destination);
                 if (ourOffer) {
                     return ourOffer.nft_offer_index || null;
@@ -312,59 +312,61 @@ export class NftService {
     }
 
     /**
-     * Fetch NFT sell offers for a given NFTokenID using the connected xrpl client.
+     * Fetch sell offers for an NFToken from the connected XRPL client.
      *
-     * This method calls the `nft_sell_offers` ledger command and returns a
-     * simplified array of SellOffer entries (amount, destination, nft_offer_index).
+     * This method sends the `nft_sell_offers` request to the XRPL node using
+     * the service's `client` and returns the raw `NFTSellOffersResponse` as
+     * provided by the xrpl library. The response contains an array of sell
+     * offers (if any) and ledger info returned by the node.
      *
-     * It tolerates variations in the XRPL client response shape and returns an
-     * empty array if no offers are found. Any unexpected request errors will
-     * propagate to the caller.
+     * Behaviour and notes:
+     * - `nftTokenId` must be a valid NFTokenID string (as produced by minting).
+     * - The method does not modify any state; it only performs an RPC query.
      *
-     * @param nftTokenId The NFTokenID to query sell offers for.
-     * @returns Array of SellOffer objects (may be empty).
+     * Errors:
+     * - Network or client errors from `this.client.request` will propagate to
+     *   the caller as thrown exceptions.
+     *
+    * Example:
+    * const offers = await nftService.fetchSellOffers("00080000...0001");
+    * if (Array.isArray(offers) && offers.length > 0) { // use `NFTOffer` items }
+    *
+    * @param nftTokenId - The NFTokenID to query sell offers for.
+    * @returns Promise resolving to an array of `NFTOffer`.
      */
-    public async fetchSellOffers(nftTokenId: string): Promise<SellOffer[]> {
-        const sellOffersRequest = { command: "nft_sell_offers", nft_id: nftTokenId } as unknown;
-        // attempt request using the xrpl client typing at runtime
-        const resp = await (this.client as unknown as { request: (r: unknown) => Promise<unknown> }).request(sellOffersRequest);
-        const maybe = resp as unknown as Record<string, unknown>;
-        if (maybe && typeof maybe === "object") {
-            const inner = maybe["result"] as unknown;
-            if (inner && typeof inner === "object") {
-                const offersRaw = (inner as Record<string, unknown>)["offers"];
-                if (Array.isArray(offersRaw)) return offersRaw as SellOffer[];
-            }
-        }
-        return [];
+    public async fetchSellOffers(nftTokenId: string): Promise<NFTOffer[]> {
+        const sellOffersRequest: NFTSellOffersRequest = { command: "nft_sell_offers", nft_id: nftTokenId };
+        const resp: NFTSellOffersResponse = await this.client.request(sellOffersRequest);
+        return resp.result.offers;
     }
 
     /**
-     * Fetch NFT buy offers for a given NFTokenID using the connected xrpl client.
+     * Fetch buy offers for an NFToken from the connected XRPL client.
      *
-     * This method calls the `nft_buy_offers` ledger command and returns a
-     * simplified array of BuyOffer entries (amount, owner, nft_offer_index).
+     * This method sends the `nft_buy_offers` request to the XRPL node using
+     * the service's `client` and returns the raw `NFTBuyOffersResponse` as
+     * provided by the xrpl library. The response contains an array of buy
+     * offers (if any) and ledger info returned by the node.
      *
-     * It tolerates variations in the XRPL client response shape and returns an
-     * empty array if no offers are found. Any unexpected request errors will
-     * propagate to the caller.
+     * Behaviour and notes:
+     * - `nftTokenId` must be a valid NFTokenID string (as produced by minting).
+     * - The method does not modify ledger state; it performs a read-only RPC.
      *
-     * @param nftTokenId The NFTokenID to query buy offers for.
-     * @returns Array of BuyOffer objects (may be empty).
+     * Errors:
+     * - Network or client errors from `this.client.request` will propagate to
+     *   the caller as thrown exceptions.
+     *
+    * Example:
+    * const offers = await nftService.fetchBuyOffers("00080000...0001");
+    * if (Array.isArray(offers) && offers.length > 0) { // use `NFTOffer` items }
+    *
+    * @param nftTokenId - The NFTokenID to query buy offers for.
+    * @returns Promise resolving to an array of `NFTOffer`.
      */
-    public async fetchBuyOffers(nftTokenId: string): Promise<BuyOffer[]> {
-        const buyOffersRequest = { command: "nft_buy_offers", nft_id: nftTokenId } as unknown;
-        // attempt request using the xrpl client typing at runtime
-        const resp = await (this.client as unknown as { request: (r: unknown) => Promise<unknown> }).request(buyOffersRequest);
-        const maybe = resp as unknown as Record<string, unknown>;
-        if (maybe && typeof maybe === "object") {
-            const inner = maybe["result"] as unknown;
-            if (inner && typeof inner === "object") {
-                const offersRaw = (inner as Record<string, unknown>)["offers"];
-                if (Array.isArray(offersRaw)) return offersRaw as BuyOffer[];
-            }
-        }
-        return [];
+    public async fetchBuyOffers(nftTokenId: string): Promise<NFTOffer[]> {
+        const buyOffersRequest: NFTBuyOffersRequest = { command: "nft_buy_offers", nft_id: nftTokenId };
+        const resp: NFTBuyOffersResponse = await this.client.request(buyOffersRequest);
+        return resp.result.offers;
     }
 }
 

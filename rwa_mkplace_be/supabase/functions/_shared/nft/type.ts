@@ -60,18 +60,3 @@ export type OfferResult = {
     offerIndex?: string;
 };
 
-/**
- * Compact representation of a sell offer stored/returned by helpers.
- * - amount: optional string amount for sell offers
- * - destination: optional recipient address
- * - nft_offer_index: ledger index for the offer
- */
-export type SellOffer = { amount?: string; destination?: string; nft_offer_index?: string };
-
-/**
- * Compact representation of a buy offer stored/returned by helpers.
- * - amount: optional string amount for buy offers
- * - owner: optional owner address (seller)
- * - nft_offer_index: ledger index for the offer
- */
-export type BuyOffer = { amount?: string; owner?: string; nft_offer_index?: string };

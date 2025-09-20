@@ -21,8 +21,6 @@ export type CreateOfferResponse = {
     // Payload details for XUMM signing
     payload_id?: string;
     deep_link?: string;
-    qr_code?: string;
-    pushed?: boolean;
     // human readable message or error
     message?: string;
     error?: string;

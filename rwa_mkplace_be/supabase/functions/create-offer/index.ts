@@ -4,10 +4,12 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { Client, NFTokenCreateOffer, Wallet } from "npm:xrpl@4.4.0";
+import { Client, Wallet } from "npm:xrpl@4.4.0";
 import config from "../_shared/config/index.ts";
 import { getNetworkUrl, getClientOptions, getClioUrl } from "../_shared/config/index.ts";
 import { NFTOfferService } from "../_shared/nftOffer/index.ts";
+import { withAuth } from "../_shared/middleware/auth.ts";
+import type { JwtPayload } from "../_shared/auth/type.ts";
 import type {
   CreateOfferRequest,
   CreateOfferResponse,
@@ -22,7 +24,7 @@ const corsHeaders = {
 
 console.log("create-offer: starting function");
 
-Deno.serve(async (req) => {
+const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -36,7 +38,7 @@ Deno.serve(async (req) => {
 
   // typed input
   const body = (await req.json()) as CreateOfferRequest;
-  const { nft_token_id, type, user_address, amount = "0", xumm_user_token } = body;
+  const { nft_token_id, type, user_address, amount = "0", xumm_user_token: _xumm_user_token } = body;
   if (!nft_token_id || !type || !user_address) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: nft_token_id, type, user_address" }),
@@ -102,24 +104,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build the NFTokenCreateOffer transaction JSON for XUMM
-    const txjson: NFTokenCreateOffer = {
-      TransactionType: "NFTokenCreateOffer" as const,
-      Account: user_address,
-      NFTokenID: nft_token_id,
-      Amount: amount,
-      ...(owner ? { Owner: owner } : {}),
-      ...(type === "sell" ? { Destination: backendWallet.address, Flags: 1 } : { Destination: backendWallet.address }),
-    };
-
-    // Create XUMM payload for the user to sign
-    const payload = await xummService.createXummPayload(
-      txjson,
-      600,
-      xumm_user_token
+    // Create XUMM payload for the user to sign using new helper
+    const payload = await xummService.createNftOfferPayload(
+      user_address,
+      {
+        nftTokenId: nft_token_id,
+        amount: amount,
+        type: type as 'sell' | 'buy',
+        owner: owner,
+        destination: backendWallet.address,
+      },
+      600
     );
+    if (!payload) throw new Error("Failed to create XUMM payload");
+    const enriched = xummService.enrichPayload(payload);
 
-    if (payload) {
+    if (enriched) {
+
       // Store the offer in the database using the service
       try {
         await offerService.createOffer({
@@ -128,12 +129,11 @@ Deno.serve(async (req) => {
           user_address,
           amount,
           owner_address: owner,
-          payload_id: payload.uuid,
-          deep_link: payload.deepLink,
-          qr_code: payload.qrCodeDataUrl,
-          pushed: payload.pushed
+          payload_id: enriched.uuid,
+          deep_link: enriched.deepLink,
+          pushed: enriched.pushed
         });
-        console.log(`Stored offer in database with payload_id: ${payload.uuid}`);
+        console.log(`Stored offer in database with payload_id: ${enriched.uuid}`);
       } catch (dbError) {
         console.error('Failed to store offer in database:', dbError);
         // Continue with response even if DB storage fails
@@ -141,10 +141,8 @@ Deno.serve(async (req) => {
 
       const response: CreateOfferResponse = {
         success: true,
-        payload_id: payload.uuid,
-        deep_link: payload.deepLink,
-        qr_code: payload.qrCodeDataUrl,
-        pushed: payload.pushed,
+        payload_id: enriched.uuid,
+        deep_link: enriched.deepLink,
         message: payload.pushed
           ? "Offer creation request sent to your XUMM wallet. Please sign to create the offer."
           : "Scan the QR code with XUMM to sign and create the offer.",
@@ -171,7 +169,10 @@ Deno.serve(async (req) => {
   } finally {
     client.disconnect();
   }
-});
+};
+
+// Export wrapped handler (optional auth)
+Deno.serve(withAuth(handler, { required: true }));
 
 /* To invoke locally:
 
@@ -180,10 +181,10 @@ Deno.serve(async (req) => {
 
 Basic offer creation (requires QR scan or deep link):
 curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-offer' \
- --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+ --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJydzJldk5HM1ppTXhIVjFSVmlwNWJNRUMzZms0dmprclJOIiwiaWF0IjoxNzU4Mzc0OTM3LCJleHAiOjE3NTgzNzg1MzcsInB1c2hfdG9rZW4iOiI0ZGE0MjZlNy1hZGU4LTRiZGEtODIxZC0wOThjYWM2N2ZlYWMifQ.s8T3pxfV6fab8SQBXuZUfKn6HRsdFYtBS9I20jcZD8o' \
  --header 'Content-Type: application/json' \
   --data '{
-"nft_token_id": "00080000F455ACD558EAD4E631A70EAAA11B5DA346A29711CB04C62800A19F8D",
+"nft_token_id": "00080000F455ACD558EAD4E631A70EAAA11B5DA346A2971199191F3100A19F96",
 "type": "sell",
 "user_address": "rw2evNG3ZiMxHV1RVip5bMEC3fk4vjkrRN",
 "amount": "1000000"

@@ -92,6 +92,7 @@ export interface SignInStatusResponse {
     instructions?: string;
     expired?: boolean;
     cancelled?: boolean;
+    jwt?: string;
     error?: string;
     hex?: string;
 }

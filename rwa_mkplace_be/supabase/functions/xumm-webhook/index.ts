@@ -6,67 +6,67 @@ import { NFTOfferService } from "../_shared/nftOffer/index.ts";
 import type { XummWebhookPayload, WebhookResponse } from "./type.ts";
 
 const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-        "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 console.log("xumm-webhook: starting function");
 
 Deno.serve(async (req) => {
-    if (req.method === "OPTIONS") {
-        return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    // Parse the webhook payload from XUMM
+    const payload = (await req.json()) as XummWebhookPayload;
+
+    console.log('Received XUMM webhook:', JSON.stringify(payload, null, 2));
+
+    const payloadId = payload.meta.uuid;
+    if (!payloadId) {
+      throw new Error("Missing payload UUID in webhook");
     }
 
-    if (req.method !== "POST") {
-        return new Response(JSON.stringify({ error: "Method not allowed" }), {
-            status: 405,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
+    const offerService = new NFTOfferService();
 
-    try {
-        // Parse the webhook payload from XUMM
-        const payload = (await req.json()) as XummWebhookPayload;
+    // Process the webhook update using the service
+    const updatedOffer = await offerService.processWebhookUpdate(payload);
 
-        console.log('Received XUMM webhook:', JSON.stringify(payload, null, 2));
+    console.log(`Updated offer ${updatedOffer.id} to status: ${updatedOffer.status}`);
 
-        const payloadId = payload.meta.uuid;
-        if (!payloadId) {
-            throw new Error("Missing payload UUID in webhook");
-        }
+    // Respond to XUMM webhook
+    const response: WebhookResponse = {
+      success: true,
+      message: `Offer status updated to ${updatedOffer.status}`,
+      offer_id: updatedOffer.id
+    };
 
-        const offerService = new NFTOfferService();
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
-        // Process the webhook update using the service
-        const updatedOffer = await offerService.processWebhookUpdate(payload);
+  } catch (err) {
+    console.error("xumm-webhook error:", err);
 
-        console.log(`Updated offer ${updatedOffer.id} to status: ${updatedOffer.status}`);
+    const errorResponse: WebhookResponse = {
+      success: false,
+      message: err instanceof Error ? err.message : String(err),
+    };
 
-        // Respond to XUMM webhook
-        const response: WebhookResponse = {
-            success: true,
-            message: `Offer status updated to ${updatedOffer.status}`,
-            offer_id: updatedOffer.id
-        };
-
-        return new Response(JSON.stringify(response), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-
-    } catch (err) {
-        console.error("xumm-webhook error:", err);
-
-        const errorResponse: WebhookResponse = {
-            success: false,
-            message: err instanceof Error ? err.message : String(err),
-        };
-
-        return new Response(JSON.stringify(errorResponse), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
+    return new Response(JSON.stringify(errorResponse), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 });
 
 /* Webhook Setup Instructions:

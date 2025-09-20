@@ -5,11 +5,8 @@
  * - qrCodeDataUrl: data URL containing a PNG/svg QR code for the payload
  * - pushed: indicates if the payload was pushed to the user's XUMM app
  */
-export type XummPayloadResult = {
-    uuid: string;
+export type XummPayloadEnrich = {
     deepLink: string;
-    qrCodeDataUrl: string;
-    pushed?: boolean;
 };
 
 /**
@@ -21,6 +18,13 @@ export type XummPayloadBody = {
     txjson: Record<string, unknown>;
     options?: { submit?: boolean; expire?: number };
 };
+
+export enum TX_TYPE {
+    SIGN_IN = "SignIn",
+    ACCEPT_OFFER = "AcceptOffer",
+    CREATE_BUY_OFFER = "CreateBuyOffer",
+    CREATE_SELL_OFFER = "CreateSellOffer",
+}
 
 const XummTxTypes = [
     'SignIn',

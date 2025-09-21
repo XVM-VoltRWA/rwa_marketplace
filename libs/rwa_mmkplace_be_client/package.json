@@ -9,7 +9,9 @@
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build",
-    "marketplace": "ts-node tests/marketplace-flow.ts"
+    "test:signin": "ts-node tests/test-signin.ts",
+    "test:create-nft": "ts-node tests/test-create-nft.ts",
+    "test:offer": "ts-node tests/test-offer.ts"
   },
   "keywords": [
     "rwa",

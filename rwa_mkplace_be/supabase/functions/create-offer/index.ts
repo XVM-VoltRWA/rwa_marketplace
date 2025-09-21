@@ -4,17 +4,15 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { Client, Wallet } from "npm:xrpl@4.4.0";
-import config from "../_shared/config/index.ts";
-import { getNetworkUrl, getClientOptions, getClioUrl } from "../_shared/config/index.ts";
 import { NFTOfferService } from "../_shared/nftOffer/index.ts";
+import { createServiceProvider } from "../_shared/serviceProvider.ts";
 import { withAuth } from "../_shared/middleware/auth.ts";
 import type { JwtPayload } from "../_shared/auth/type.ts";
 import type {
   CreateOfferRequest,
   CreateOfferResponse,
 } from "./type.ts";
-import XummService from "../_shared/xumm/index.ts";
+// XummService provided by `serviceProvider`
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +22,7 @@ const corsHeaders = {
 
 console.log("create-offer: starting function");
 
-const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
+const handler = async (req: Request, _ctx: { user: JwtPayload }) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -38,8 +36,9 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
 
   // typed input
   const body = (await req.json()) as CreateOfferRequest;
-  const { nft_token_id, type, user_address, amount = "0", xumm_user_token: _xumm_user_token } = body;
-  if (!nft_token_id || !type || !user_address) {
+  const { nft_token_id, type, amount = 0 } = body;
+  const { sub: user_address } = _ctx.user;
+  if (!nft_token_id || !type) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: nft_token_id, type, user_address" }),
       {
@@ -59,9 +58,9 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
     );
   }
 
-  if (type === "buy" && amount === "0") {
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
     return new Response(
-      JSON.stringify({ error: "Amount must be non-zero for buy offers" }),
+      JSON.stringify({ error: "Amount must be a positive number of drops" }),
       {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -69,31 +68,17 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
     );
   }
 
-  if (!config.BACKEND_WALLET_SEED)
-    throw new Error("Backend wallet seed not configured");
-  if (!config.XUMM_API_KEY)
-    throw new Error(
-      "XUMM API key/secret not configured; skipping XUMM payload creation"
-    );
-
-  if (!config.XUMM_API_SECRET)
-    throw new Error(
-      "XUMM API key/secret not configured; skipping XUMM payload creation"
-    );
-
-  const client = new Client(getNetworkUrl(config.NETWORK), getClientOptions());
-  await client.connect();
-  const backendWallet = Wallet.fromSeed(config.BACKEND_WALLET_SEED);
-  const xummService = new XummService(
-    config.XUMM_API_KEY,
-    config.XUMM_API_SECRET
-  );
+  // Create a fresh ServiceProvider instance for this invocation to avoid
+  // shared global state across requests (reduces long-lived connections)
+  const sp = createServiceProvider();
+  const clioClient = await sp.getClioClient();
+  const backendWallet = sp.getBackendWallet();
+  const xummService = sp.getXummService();
   const offerService = new NFTOfferService();
 
   try {
     let owner: string | undefined;
     if (type === "buy") {
-      const clioClient = new Client(getClioUrl(config.NETWORK), getClientOptions());
       const nftInfo = await clioClient.request({
         command: "nft_info",
         nft_id: nft_token_id
@@ -109,7 +94,8 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
       user_address,
       {
         nftTokenId: nft_token_id,
-        amount: amount,
+        // XRPL/XUMM expect amounts as strings (drops) — convert from number
+        amount: String(amount),
         type: type as 'sell' | 'buy',
         owner: owner,
         destination: backendWallet.address,
@@ -127,7 +113,7 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
           nft_token_id,
           offer_type: type as 'sell' | 'buy',
           user_address,
-          amount,
+          amount: String(amount),
           owner_address: owner,
           payload_id: enriched.uuid,
           deep_link: enriched.deepLink,
@@ -167,12 +153,18 @@ const handler = async (req: Request, _ctx: { user?: JwtPayload }) => {
       }
     );
   } finally {
-    client.disconnect();
+    // Disconnect only the provider instance we created above. Fall back to
+    // the legacy singleton disconnect as a safety net.
+    try {
+      if (typeof sp !== "undefined" && sp) await sp.disconnectAll();
+    } catch (_e) {
+      console.warn("Error disconnecting service provider instance:", _e);
+    }
   }
 };
 
 // Export wrapped handler (optional auth)
-Deno.serve(withAuth(handler, { required: true }));
+Deno.serve(withAuth(handler));
 
 /* To invoke locally:
 
@@ -187,7 +179,7 @@ curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-of
 "nft_token_id": "00080000F455ACD558EAD4E631A70EAAA11B5DA346A2971199191F3100A19F96",
 "type": "sell",
 "user_address": "rw2evNG3ZiMxHV1RVip5bMEC3fk4vjkrRN",
-"amount": "1000000"
+"amount": 1000000
 }'
 
 curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-offer' \
@@ -197,7 +189,7 @@ curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-of
 "nft_token_id": "00080000F455ACD558EAD4E631A70EAAA11B5DA346A29711CB04C62800A19F8D",
 "type": "buy",
 "user_address": "rpwDs3p5SgW6MZn5WJUsS4Cu7VX8a6uQ2D",
-"amount": "1000000"
+"amount": 1000000
 }'
 
 With XUMM push notifications (sends directly to wallet):
@@ -208,7 +200,7 @@ curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-of
 "nft_token_id": "00080000...",
 "type": "sell",
 "user_address": "r...",
-"amount": "1000000",
+"amount": 1000000,
 "xumm_user_token": "4da426e7-ade8-4bda-821d-098cac67feac" 
 }'
 

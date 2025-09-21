@@ -20,7 +20,7 @@ export class XummService {
      * Create a sign-in payload for XUMM authentication.
      * Returns payload details including QR code for user to scan.
      */
-    async createSignInPayload(walletAddress?: string): Promise<SdkTypes.XummPostPayloadResponse | null> {
+    async createSignInPayload(): Promise<SdkTypes.XummPostPayloadResponse | null> {
         const xumm = this.sdk();
         const signInPayload: SdkTypes.CreatePayload = {
             txjson: {
@@ -36,7 +36,7 @@ export class XummService {
                 }
             }
         };
-        if (walletAddress) signInPayload.txjson.Account = walletAddress;
+        // if (walletAddress) signInPayload.txjson.Account = walletAddress;
         const payload = await xumm.payload.create(signInPayload);
         return payload;
     }

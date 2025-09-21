@@ -1,10 +1,8 @@
 export type CreateOfferRequest = {
     nft_token_id: string;
     type: "sell" | "buy";
-    user_address: string; // the address of the user creating the offer
-    amount?: string; // optional, defaults to "0"
-    // optional XUMM user token for push notifications (obtained from previous XUMM sign-in)
-    xumm_user_token?: string;
+    // Amount in drops (1 drop = 0.000001 XRP). Use a number here for API ease.
+    amount?: number; // optional, defaults to 0
 };
 
 export type OfferAcceptance = {

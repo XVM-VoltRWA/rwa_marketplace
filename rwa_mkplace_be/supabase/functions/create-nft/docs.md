@@ -8,18 +8,20 @@ sequenceDiagram
     participant XamanAPI
     participant XRPLLedger
 
-    User->>Frontend: Clicks "Mint NFT" button
-    Frontend->>Backend: 1. Request to Start Minting Process
+    User->>Frontend: Clicks "create NFT" button
+    Frontend->>Backend: 1. POST /create-nft
+    Backend->>Backend: 2. Mint NFT
+    Backend->>Backend: 3. Create sell offer with 0 XRP (give away)
     activate Backend
-    Backend->>XamanAPI: 2. Create Payload (Signed Request)
+    Backend->>XamanAPI: 4. Create NFTokenAcceptOffer payload
     activate XamanAPI
-    XamanAPI-->>Backend: 3. Returns Payload URL/QR Code
+    XamanAPI-->>Backend: 5. Returns Payload URL/QR Code
     deactivate XamanAPI
-    Backend-->>Frontend: 4. Send URL/QR Code to Frontend
+    Backend-->>Frontend: 6. Send URL/QR Code to Frontend
     deactivate Backend
 
     Frontend->>User: Displays QR Code/URL for user
-    User->>XamanAPI: 5. Scans QR Code & signs in Xaman Wallet
+    User->>XamanAPI: 7. Scans QR Code & signs in Xaman Wallet
     activate XamanAPI
     XamanAPI->>Backend: 6. **Webhook Notification** (Payload UUID)
     activate Backend

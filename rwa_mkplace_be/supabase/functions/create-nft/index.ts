@@ -4,16 +4,17 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { Client, Wallet } from "npm:xrpl@4.4.0";
-import NftService from "../_shared/nft/service.ts";
+import { /* Client, Wallet */ } from "npm:xrpl@4.4.0";
+// NftService is provided by `serviceProvider`
 import config from "../_shared/config/index.ts";
-import { getExplorerBase, getNetworkUrl, getClientOptions } from "../_shared/config/index.ts";
+import { getExplorerBase } from "../_shared/config/index.ts";
+import { createServiceProvider } from "../_shared/serviceProvider.ts";
 import type {
   CreateNftRequest,
   CreateNftResponse,
   OfferAcceptance,
 } from "./type.ts";
-import XummService from "../_shared/xumm/index.ts";
+// XummService is provided by `serviceProvider`
 import { withAuth } from "../_shared/middleware/auth.ts";
 import type { JwtPayload } from "../_shared/auth/type.ts";
 
@@ -23,9 +24,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-console.log("create-nft: starting function");
-
-const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
+const handler = async (req: Request, ctx: { user: JwtPayload }) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -39,20 +38,8 @@ const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
 
   // typed input
   const body: CreateNftRequest = await req.json();
-  let { name, image_url, metadata, owner_address, xumm_user_token } = body;
-
-  // Prefer push_token from authenticated session, if available
-  if (!xumm_user_token && ctx.user && typeof ctx.user.push_token === "string") {
-    xumm_user_token = ctx.user.push_token;
-  }
-
-  // If an authenticated session exists, ensure owner_address matches session
-  if (ctx.user && owner_address && owner_address !== ctx.user.sub) {
-    return new Response(
-      JSON.stringify({ success: false, error: "owner_address does not match authenticated session wallet" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  const { name, image_url, metadata } = body;
+  const { sub: owner_address } = ctx.user;
 
   if (!name || !image_url) {
     return new Response(
@@ -64,15 +51,11 @@ const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
     );
   }
 
-  if (!config.BACKEND_WALLET_SEED) throw new Error("Backend wallet seed not configured");
-  if (!config.XUMM_API_KEY) throw new Error("XUMM API key/secret not configured; skipping XUMM payload creation");
-  if (!config.XUMM_API_SECRET) throw new Error("XUMM API key/secret not configured; skipping XUMM payload creation");
-
-  const client = new Client(getNetworkUrl(config.NETWORK), getClientOptions());
-  await client.connect();
-  const backendWallet = Wallet.fromSeed(config.BACKEND_WALLET_SEED);
-  const nftService = new NftService(client, backendWallet);
-  const xummService = new XummService(config.XUMM_API_KEY, config.XUMM_API_SECRET);
+  // Use a fresh ServiceProvider instance for this invocation
+  const sp = createServiceProvider();
+  const nftService = await sp.getNftService();
+  const backendWallet = sp.getBackendWallet();
+  const xummService = sp.getXummService();
 
   try {
     // Mint using shared service
@@ -106,9 +89,7 @@ const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
       // If we have offer index and XUMM credentials in config, create a XUMM payload and QR here
       if (
         giveNftToCreatorResult &&
-        giveNftToCreatorResult.offerIndex &&
-        config.XUMM_API_KEY &&
-        config.XUMM_API_SECRET
+        giveNftToCreatorResult.offerIndex
       ) {
         try {
           const payload = await xummService.createAcceptOfferPayload(owner_address, giveNftToCreatorResult.offerIndex);
@@ -153,12 +134,16 @@ const handler = async (req: Request, ctx: { user?: JwtPayload }) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } finally {
-    client.disconnect();
+    try {
+      if (typeof sp !== "undefined" && sp) await sp.disconnectAll();
+    } catch (_err) {
+      console.warn("Error disconnecting service provider instance:", _err);
+    }
   }
 };
 
 // Export the wrapped handler (optional auth)
-Deno.serve(withAuth(handler, { required: true }));
+Deno.serve(withAuth(handler));
 
 /* To invoke locally:
 

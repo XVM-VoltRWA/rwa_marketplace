@@ -5,7 +5,6 @@ import {
     CreateNftResponse,
     CreateOfferRequest,
     CreateOfferResponse,
-    SignInRequest,
     SignInResponse,
     SignInStatusResponse,
     ApiResponse,
@@ -77,8 +76,8 @@ export class RwaMarketplaceClient {
      * 
      * Creates a sell or buy offer for an NFT on XRPL
      * 
-     * @param request - Offer creation parameters
-     * @returns Promise<CreateOfferResponse>
+    * @param request - Offer creation parameters (note: `user_address` is optional; backend may derive from session)
+    * @returns Promise<CreateOfferResponse>
      */
     async createOffer(request: CreateOfferRequest): Promise<ApiResponse<CreateOfferResponse>> {
         try {
@@ -102,14 +101,14 @@ export class RwaMarketplaceClient {
      * 
      * Creates a XUMM sign-in payload for wallet authentication
      * 
-     * @param request - Sign-in parameters (optional wallet address)
-     * @returns Promise<SignInResponse>
+    * @param request - Sign-in parameters. `wallet_address` is optional; backend can initiate a sign-in without pre-specified wallet.
+    * @returns Promise<SignInResponse>
      */
-    async xummSignIn(request: SignInRequest = {}): Promise<ApiResponse<SignInResponse>> {
+    async xummSignIn(request?: { wallet_address?: string }): Promise<ApiResponse<SignInResponse>> {
         try {
             const response: AxiosResponse<SignInResponse> = await this.client.post(
                 '/functions/v1/xumm-signin',
-                request
+                request || {}
             );
 
             return {

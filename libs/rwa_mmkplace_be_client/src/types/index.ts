@@ -3,10 +3,6 @@ export interface CreateNftRequest {
     name: string;
     image_url: string;
     metadata?: Record<string, unknown>;
-    // optional destination address to create a transfer offer for after minting
-    owner_address?: string;
-    // optional XUMM user token for push notifications (obtained from previous XUMM sign-in)
-    xumm_user_token?: string;
 }
 
 export interface OfferAcceptance {
@@ -46,10 +42,7 @@ export interface CreateNftResponse {
 export interface CreateOfferRequest {
     nft_token_id: string;
     type: "sell" | "buy";
-    user_address: string; // the address of the user creating the offer
-    amount?: string; // optional, defaults to "0" (in drops)
-    // optional XUMM user token for push notifications (obtained from previous XUMM sign-in)
-    xumm_user_token?: string;
+    amount?: number; // optional, defaults to "0" (in drops)
 }
 
 export interface CreateOfferResponse {
@@ -64,10 +57,7 @@ export interface CreateOfferResponse {
     error?: string;
 }
 
-// XUMM Sign-in Types
-export interface SignInRequest {
-    wallet_address?: string;
-}
+
 
 export interface SignInResponse {
     success: boolean;

@@ -32,7 +32,7 @@ export function getClioUrl(network = cfg.NETWORK) {
     return network === "mainnet"
         // TODO: fill this after setup Clio mainnet instance
         ? ""
-        : "https://clio.altnet.rippletest.net:50051";
+        : "wss://clio.altnet.rippletest.net:51233";
 }
 
 export function getExplorerBase(network = cfg.NETWORK) {

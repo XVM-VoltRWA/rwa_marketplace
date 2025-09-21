@@ -18,7 +18,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import XummService from "../_shared/xumm/index.ts";
 import config from "../_shared/config/index.ts";
 import { AuthService } from "../_shared/auth/service.ts";
-import type { SignInRequest, SignInResponse, SignInStatusResponse } from "./type.ts";
+import type { SignInResponse, SignInStatusResponse } from "./type.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,15 +117,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: SignInRequest = await req.json();
-    const { wallet_address } = body;
-
-    if (!wallet_address) {
-      return errorResponse("Missing required field: wallet_address", 400);
-    }
-
     const { xummService } = createServices();
-    const payload = await xummService.createSignInPayload(wallet_address);
+    const payload = await xummService.createSignInPayload();
     console.log("Created payload:", payload);
     if (!payload) {
       throw new Error("Failed to create XUMM payload");
@@ -158,6 +151,5 @@ Deno.serve(async (req) => {
   }'
 
 
-  curl -i --location --request GET 'http://127.0.0.1:54321/functions/v1/xumm-signin?payload_id=6a19ab9b-3ab9-45e6-8dac-daded49a2f52' \
-  --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+  curl -i --location --request GET 'http://127.0.0.1:54321/functions/v1/xumm-signin?payload_id=bac3aea8-13dc-4710-a78f-240a123c01a1'
  */

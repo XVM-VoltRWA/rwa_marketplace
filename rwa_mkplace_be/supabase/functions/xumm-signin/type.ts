@@ -1,7 +1,3 @@
-export type SignInRequest = {
-    wallet_address?: string;
-};
-
 export type SignInResponse = {
     success: boolean;
     payload_id: string;

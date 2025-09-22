@@ -4,11 +4,12 @@ A decentralized marketplace for Real World Assets (RWAs) built on the XRP Ledger
 
 ## Overview
 
-This marketplace provides a complete infrastructure for converting real-world assets into tradeable digital tokens on the XRP Ledger. Users can create, mint, and trade tokenized representations of assets such as real estate, artwork, commodities, or any other valuable items.
+This marketplace provides a complete infrastructure for converting real-world assets into tradeable digital tokens on the XRP Ledger. Users can create, mint, and trade tokenized representations of assets such as artwork, commodities, or any other valuable items.
 
 ## Architecture
 
 ### Backend (rwa_mkplace_be)
+
 The backend is built on Supabase with TypeScript edge functions that handle:
 
 - **Asset Management**: Creation and lifecycle management of RWA records
@@ -21,6 +22,7 @@ The backend is built on Supabase with TypeScript edge functions that handle:
 - **Marketplace Logic**: Buy/sell order management and asset listing functionality
 
 ### Frontend (rwa_mkplace_fe)
+
 The frontend is currently implemented as a comprehensive test tool built with Vue.js that provides:
 
 - **Wallet Connection**: Integration with XUMM mobile wallet for XRPL access

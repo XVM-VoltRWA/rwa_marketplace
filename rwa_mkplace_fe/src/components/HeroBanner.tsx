@@ -1,4 +1,4 @@
-import { HiArrowRight, HiSparkles } from 'react-icons/hi';
+import { HiArrowRight, HiSparkles } from "react-icons/hi";
 
 interface HeroBannerProps {
   featuredAsset: {
@@ -30,22 +30,17 @@ export const HeroBanner = ({ featuredAsset, onExploreClick, onAssetClick }: Hero
             </h1>
 
             <p className="text-lg text-neutral leading-relaxed">
-              Invest in real-world assets backed by blockchain technology.
-              Discover luxury goods, real estate, and collectibles tokenized for secure ownership.
+              Invest in real-world assets backed by blockchain technology. Discover luxury goods,
+              and collectibles tokenized for secure ownership.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={onExploreClick}
-                className="btn btn-primary btn-lg rounded-xl group"
-              >
+              <button onClick={onExploreClick} className="btn btn-primary btn-lg rounded-xl group">
                 Explore Marketplace
                 <HiArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <button className="btn btn-outline btn-lg rounded-xl">
-                Learn More
-              </button>
+              <button className="btn btn-outline btn-lg rounded-xl">Learn More</button>
             </div>
 
             {/* Pre-Launch Info */}
@@ -67,8 +62,10 @@ export const HeroBanner = ({ featuredAsset, onExploreClick, onAssetClick }: Hero
 
           {/* Right Content - Featured Asset */}
           <div className="relative">
-            <div className="card bg-base-100/50 backdrop-blur-sm shadow-2xl border border-base-200/50 overflow-hidden rounded-xl group cursor-pointer hover:shadow-3xl transition-all duration-300"
-                 onClick={() => onAssetClick?.(featuredAsset.id)}>
+            <div
+              className="card bg-base-100/50 backdrop-blur-sm shadow-2xl border border-base-200/50 overflow-hidden rounded-xl group cursor-pointer hover:shadow-3xl transition-all duration-300"
+              onClick={() => onAssetClick?.(featuredAsset.id)}
+            >
               {/* Featured Badge */}
               <div className="absolute top-6 left-6 z-10">
                 <div className="badge bg-primary/90 text-white font-bold px-4 py-3 text-sm">
@@ -107,19 +104,13 @@ export const HeroBanner = ({ featuredAsset, onExploreClick, onAssetClick }: Hero
                   </div>
                   <div>
                     <p className="text-sm text-neutral mb-1">24h Change</p>
-                    <p className="text-lg font-semibold text-success">
-                      +2.5%
-                    </p>
+                    <p className="text-lg font-semibold text-success">+2.5%</p>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <button className="btn btn-primary flex-1 btn-lg rounded-xl">
-                    View Details
-                  </button>
-                  <button className="btn btn-outline btn-lg rounded-xl px-6">
-                    ♡
-                  </button>
+                  <button className="btn btn-primary flex-1 btn-lg rounded-xl">View Details</button>
+                  <button className="btn btn-outline btn-lg rounded-xl px-6">♡</button>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { HiSearch, HiFilter, HiX, HiChevronDown } from 'react-icons/hi';
+import { useState } from "react";
+import { HiSearch, HiFilter, HiX, HiChevronDown } from "react-icons/hi";
 
 interface SearchFilterBarProps {
   onSearchChange: (query: string) => void;
@@ -14,17 +14,17 @@ export const SearchFilterBar = ({
   onSortChange,
   onPriceRangeChange,
   searchQuery,
-  sortBy
+  sortBy,
 }: SearchFilterBarProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
 
   const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'price-low', label: 'Price: Low to High' },
-    { value: 'price-high', label: 'Price: High to Low' },
-    { value: 'trending', label: 'Trending' },
-    { value: 'popular', label: 'Most Popular' }
+    { value: "newest", label: "Newest First" },
+    { value: "price-low", label: "Price: Low to High" },
+    { value: "price-high", label: "Price: High to Low" },
+    { value: "trending", label: "Trending" },
+    { value: "popular", label: "Most Popular" },
   ];
 
   const handlePriceRangeSubmit = () => {
@@ -48,7 +48,7 @@ export const SearchFilterBar = ({
             />
             {searchQuery && (
               <button
-                onClick={() => onSearchChange('')}
+                onClick={() => onSearchChange("")}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral hover:text-base-content"
               >
                 <HiX className="w-5 h-5" />
@@ -61,14 +61,17 @@ export const SearchFilterBar = ({
         <div className="dropdown dropdown-end">
           <label tabIndex={0} className="btn btn-outline gap-2 min-w-[180px]">
             <HiChevronDown className="w-4 h-4" />
-            {sortOptions.find(option => option.value === sortBy)?.label || 'Sort By'}
+            {sortOptions.find((option) => option.value === sortBy)?.label || "Sort By"}
           </label>
-          <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 border border-base-200/50 rounded-box w-52 mt-2">
+          <ul
+            tabIndex={0}
+            className="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 border border-base-200/50 rounded-box w-52 mt-2"
+          >
             {sortOptions.map((option) => (
               <li key={option.value}>
                 <button
                   onClick={() => onSortChange(option.value)}
-                  className={`${sortBy === option.value ? 'bg-primary/10 text-primary' : ''}`}
+                  className={`${sortBy === option.value ? "bg-primary/10 text-primary" : ""}`}
                 >
                   {option.label}
                 </button>
@@ -80,7 +83,7 @@ export const SearchFilterBar = ({
         {/* Filter Button */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`btn gap-2 ${showFilters ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn gap-2 ${showFilters ? "btn-primary" : "btn-outline"}`}
         >
           <HiFilter className="w-4 h-4" />
           Filters
@@ -123,7 +126,6 @@ export const SearchFilterBar = ({
               <select className="select select-bordered select-sm w-full bg-base-100/50">
                 <option value="">All Types</option>
                 <option value="collectibles">Collectibles</option>
-                <option value="real-estate">Real Estate</option>
                 <option value="commodities">Commodities</option>
                 <option value="art">Art & Culture</option>
               </select>
@@ -149,10 +151,7 @@ export const SearchFilterBar = ({
 
           {/* Filter Actions */}
           <div className="flex gap-3 mt-6">
-            <button
-              onClick={handlePriceRangeSubmit}
-              className="btn btn-primary btn-sm"
-            >
+            <button onClick={handlePriceRangeSubmit} className="btn btn-primary btn-sm">
               Apply Filters
             </button>
             <button

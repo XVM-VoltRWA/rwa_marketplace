@@ -427,7 +427,6 @@ const CreateAsset = () => {
                         >
                           <option value="">Select category</option>
                           <option value="Collectibles">🏆 Collectibles</option>
-                          <option value="Real Estate">🏠 Real Estate</option>
                           <option value="Art">🎨 Art</option>
                           <option value="Vehicles">🚗 Vehicles</option>
                           <option value="Luxury Goods">💎 Luxury Goods</option>

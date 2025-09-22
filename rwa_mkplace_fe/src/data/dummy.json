@@ -21,11 +21,6 @@
       "iconType": "stocks"
     },
     {
-      "id": "real-estate",
-      "name": "Real Estate",
-      "iconType": "real-estate"
-    },
-    {
       "id": "esg",
       "name": "ESG",
       "iconType": "esg"
@@ -125,7 +120,7 @@
       "categoryId": "collectibles",
       "price": 8500,
       "minValuation": 5000,
-      "image": "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=500&h=300&fit=crop",
+      "image": "https://i.redd.it/i3zhjwe19eae1.jpeg",
       "trending": true,
       "badge": "Rare"
     },
@@ -136,7 +131,7 @@
       "categoryId": "collectibles",
       "price": 3200,
       "minValuation": 2000,
-      "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&h=300&fit=crop",
+      "image": "https://i0.wp.com/anniewearsit.com/wp-content/uploads/2021/01/IMG_4344-scaled.jpg?fit=1707%2C2560&ssl=1",
       "trending": false,
       "badge": "Designer"
     },
@@ -152,19 +147,8 @@
       "badge": "Green"
     },
     {
-      "id": "10",
-      "name": "Miami Beach Condo Share",
-      "category": "Real Estate",
-      "categoryId": "real-estate",
-      "price": 15000,
-      "minValuation": 10000,
-      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&h=300&fit=crop",
-      "trending": true,
-      "badge": "Property"
-    },
-    {
       "id": "11",
-      "name": "Omega Speedmaster Professional",
+      "name": "Omega Speedmaster",
       "category": "Watches",
       "categoryId": "collectibles",
       "price": 12000,

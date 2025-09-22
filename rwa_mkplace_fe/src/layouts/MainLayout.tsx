@@ -33,8 +33,8 @@ const MainLayout = () => {
 
   return (
     <div className="min-h-screen bg-base-100">
-      {/* Navigation */}
-      <nav className="border-b border-base-300">
+      {/* Navigation with Glassmorphism */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-base-100/80 border-b border-base-200/50 shadow-lg">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo and main nav */}
@@ -127,14 +127,14 @@ const MainLayout = () => {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-base-200 border-t border-base-300 mt-12">
+      <footer className="bg-base-200 border-t border-base-200/50 mt-12">
         <div className="container mx-auto px-4 py-6">
-          <p className="text-center text-sm text-base-content/60">
+          <p className="text-center text-sm text-neutral">
             © {new Date().getFullYear()} RWA Marketplace. Built on XRPL.
           </p>
         </div>

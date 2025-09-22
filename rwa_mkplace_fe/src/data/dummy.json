@@ -1,0 +1,188 @@
+{
+  "categories": [
+    {
+      "id": "collectibles",
+      "name": "Collectibles",
+      "iconType": "collectibles"
+    },
+    {
+      "id": "credit",
+      "name": "Credit",
+      "iconType": "credit"
+    },
+    {
+      "id": "commodities",
+      "name": "Commodities",
+      "iconType": "commodities"
+    },
+    {
+      "id": "stocks",
+      "name": "Stocks",
+      "iconType": "stocks"
+    },
+    {
+      "id": "real-estate",
+      "name": "Real Estate",
+      "iconType": "real-estate"
+    },
+    {
+      "id": "esg",
+      "name": "ESG",
+      "iconType": "esg"
+    },
+    {
+      "id": "royalties",
+      "name": "Royalties",
+      "iconType": "royalties"
+    },
+    {
+      "id": "membership",
+      "name": "Membership",
+      "iconType": "membership"
+    },
+    {
+      "id": "partner-store",
+      "name": "Partner Store",
+      "iconType": "partner-store"
+    },
+    {
+      "id": "l1l2",
+      "name": "L1/L2",
+      "iconType": "l1l2"
+    }
+  ],
+  "assets": [
+    {
+      "id": "1",
+      "name": "Aurus Gold - TXAU 2 gm",
+      "category": "Gold",
+      "categoryId": "commodities",
+      "price": 150,
+      "minValuation": 2500,
+      "image": "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Gold"
+    },
+    {
+      "id": "2",
+      "name": "Polytrade x Aurus | tSilver NFT",
+      "category": "Inflation Hedge",
+      "categoryId": "commodities",
+      "price": 40,
+      "minValuation": 800,
+      "image": "https://images.unsplash.com/photo-1574607407413-e526a6f83f37?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Inflation Hedge"
+    },
+    {
+      "id": "3",
+      "name": "Hand printed Nike AF1 sneakers",
+      "category": "Nike",
+      "categoryId": "collectibles",
+      "price": 580,
+      "minValuation": 350,
+      "image": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Nike"
+    },
+    {
+      "id": "4",
+      "name": "Men's Athletic Shoes",
+      "category": "Nike",
+      "categoryId": "collectibles",
+      "price": 120,
+      "minValuation": 200,
+      "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=300&fit=crop",
+      "trending": true,
+      "badge": "Trending"
+    },
+    {
+      "id": "5",
+      "name": "Rolex Submariner Date 2023",
+      "category": "Watches",
+      "categoryId": "collectibles",
+      "price": 25000,
+      "minValuation": 15000,
+      "image": "https://images.unsplash.com/photo-1587836374828-4dbafa94cf0e?w=500&h=300&fit=crop",
+      "trending": true,
+      "badge": "Hot"
+    },
+    {
+      "id": "6",
+      "name": "Patek Philippe Nautilus",
+      "category": "Watches",
+      "categoryId": "collectibles",
+      "price": 75000,
+      "minValuation": 45000,
+      "image": "https://images.unsplash.com/photo-1622434641406-a158123450f9?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Luxury"
+    },
+    {
+      "id": "7",
+      "name": "Rare Jordan 1 Chicago 1985",
+      "category": "Sneakers",
+      "categoryId": "collectibles",
+      "price": 8500,
+      "minValuation": 5000,
+      "image": "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=500&h=300&fit=crop",
+      "trending": true,
+      "badge": "Rare"
+    },
+    {
+      "id": "8",
+      "name": "Louis Vuitton Keepall 55",
+      "category": "Bags",
+      "categoryId": "collectibles",
+      "price": 3200,
+      "minValuation": 2000,
+      "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Designer"
+    },
+    {
+      "id": "9",
+      "name": "Tesla Model S Carbon Credits",
+      "category": "ESG",
+      "categoryId": "esg",
+      "price": 500,
+      "minValuation": 300,
+      "image": "https://images.unsplash.com/photo-1617886903355-9354bb57751f?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Green"
+    },
+    {
+      "id": "10",
+      "name": "Miami Beach Condo Share",
+      "category": "Real Estate",
+      "categoryId": "real-estate",
+      "price": 15000,
+      "minValuation": 10000,
+      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&h=300&fit=crop",
+      "trending": true,
+      "badge": "Property"
+    },
+    {
+      "id": "11",
+      "name": "Omega Speedmaster Professional",
+      "category": "Watches",
+      "categoryId": "collectibles",
+      "price": 12000,
+      "minValuation": 7500,
+      "image": "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=500&h=300&fit=crop",
+      "trending": false,
+      "badge": "Space"
+    },
+    {
+      "id": "12",
+      "name": "Hermes Birkin 30 Black",
+      "category": "Bags",
+      "categoryId": "collectibles",
+      "price": 45000,
+      "minValuation": 30000,
+      "image": "https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=500&h=300&fit=crop",
+      "trending": true,
+      "badge": "Exclusive"
+    }
+  ]
+}

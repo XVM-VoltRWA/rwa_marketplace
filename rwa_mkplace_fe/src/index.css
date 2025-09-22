@@ -8,22 +8,41 @@
   --color-secondary-gradient-end: #3f7ff5;
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(41, 171, 226, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(41, 171, 226, 0.7);
+}
+
 @plugin "daisyui/theme" {
   name: "voltrwa";
   default: true;
   prefersdark: true;
   color-scheme: "dark";
-  --color-base-100: #0d0d1b;
-  --color-base-200: oklch(19% 0 0);
-  --color-base-300: #161a29;
+  --color-base-100: #0E0D1B; /* Main background */
+  --color-base-200: #171A29; /* Category backgrounds */
+  --color-base-300: #141318; /* Card backgrounds */
   --color-base-content: #ffffff;
-  --color-primary: #29abe2;
+  --color-primary: #3788F3; /* Button gradient start */
   --color-primary-content: oklch(100% 0 0);
   --color-secondary: #021ca4;
   --color-secondary-content: oklch(98% 0.003 247.858);
   --color-accent: oklch(35% 0 0);
   --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(35% 0 0);
+  --color-neutral: #A3A7B2; /* Category text/icons */
   --color-neutral-content: oklch(100% 0 0);
   --color-info: oklch(45.201% 0.313 264.052);
   --color-info-content: oklch(89.04% 0.062 264.052);

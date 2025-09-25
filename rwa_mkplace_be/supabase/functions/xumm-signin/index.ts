@@ -86,10 +86,14 @@ Deno.serve(async (req) => {
         response.message = "Sign-in successful!";
 
         try {
+          console.log("Attempting to generate JWT for wallet:", status.wallet_address);
           const jwt = await auth.createSessionJwt(status.wallet_address, undefined, status.user_token);
+          console.log("JWT generated successfully:", jwt ? "Yes" : "No");
           response.jwt = jwt;
         } catch (err) {
           console.error("Failed to generate JWT:", err);
+          // Add the error to the response so we can debug it
+          response.message += ` (JWT generation failed: ${err instanceof Error ? err.message : 'Unknown error'})`;
         }
       } else if (status.expired) {
         response.expired = true;
@@ -129,6 +133,7 @@ Deno.serve(async (req) => {
     const response: SignInResponse = {
       success: true,
       payload_id: enriched.uuid,
+      qr_code: payload.refs?.qr_png || `https://xumm.app/sign/${enriched.uuid}/qr`,
       deep_link: enriched.deepLink,
       message: "Scan the QR code with XUMM to sign in",
       next_step: `After signing, call GET /xumm-signin?payload_id=${enriched.uuid} to retrieve your user token`,

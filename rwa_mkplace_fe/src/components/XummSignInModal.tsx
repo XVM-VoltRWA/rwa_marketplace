@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWalletStore } from '../store/walletStore';
-import { xummService } from '../services/xummService';
-import type { SignInResponse } from '../types/xumm.types';
+import { signIn, checkSignInStatus, type SignInResponse } from '../services/api-client';
 
 interface XummSignInModalProps {
   isOpen: boolean;
@@ -38,7 +37,7 @@ export const XummSignInModal = ({ isOpen, onClose }: XummSignInModalProps) => {
     setError(null);
 
     try {
-      const response = await xummService.createSignInRequest();
+      const response = await signIn();
       setSignInPayload(response);
       setStatusMessage('Scan the QR code with your XUMM wallet to sign in');
 
@@ -51,39 +50,63 @@ export const XummSignInModal = ({ isOpen, onClose }: XummSignInModalProps) => {
   };
 
   const pollForSignIn = async (payloadId: string) => {
-    try {
-      const status = await xummService.pollSignInStatus(
-        payloadId,
-        (statusUpdate) => {
-          // Update status message based on current state
-          if (statusUpdate.status === 'pending') {
-            setStatusMessage('Waiting for you to sign in with XUMM...');
+    const maxAttempts = 150; // 5 minutes with 2 second intervals
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const status = await checkSignInStatus(payloadId);
+
+        if (status.status === 'pending') {
+          setStatusMessage('Waiting for you to sign in with XUMM...');
+
+          // Continue polling if not resolved and not exceeded max attempts
+          if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(poll, 2000); // Poll every 2 seconds
+          } else {
+            setError('Sign-in request expired. Please try again.');
+            setIsLoading(false);
           }
-        },
-        150 // 5 minutes timeout
-      );
+        } else if (status.signed && status.user_token && status.wallet_address) {
+          // Success!
+          setStatusMessage('Successfully signed in!');
 
-      if (status.signed && status.user_token && status.wallet_address) {
-        // Success!
-        setStatusMessage('Successfully signed in!');
-        setWalletData(status.wallet_address, status.user_token);
+          console.log('Sign-in status response:', status);
 
-        // Close modal after brief success message
-        setTimeout(() => {
-          onClose();
-        }, 1500);
-      } else if (status.cancelled) {
-        setError('Sign-in was cancelled');
-      } else if (status.expired) {
-        setError('Sign-in request expired. Please try again.');
-      } else {
-        setError('Sign-in failed. Please try again.');
+          // Save JWT if provided
+          if (status.jwt) {
+            console.log('JWT token received, saving to localStorage');
+            localStorage.setItem('jwt_token', status.jwt);
+          } else {
+            console.warn('No JWT token in sign-in response');
+          }
+
+          setWalletData(status.wallet_address, status.user_token);
+
+          // Close modal after brief success message
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+          setIsLoading(false);
+        } else if (status.cancelled) {
+          setError('Sign-in was cancelled');
+          setIsLoading(false);
+        } else if (status.expired) {
+          setError('Sign-in request expired. Please try again.');
+          setIsLoading(false);
+        } else {
+          setError('Sign-in failed. Please try again.');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Sign-in failed');
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    // Start polling
+    poll();
   };
 
   const handleRetry = () => {
@@ -120,13 +143,16 @@ export const XummSignInModal = ({ isOpen, onClose }: XummSignInModalProps) => {
                 Try Again
               </button>
             </div>
-          ) : signInPayload?.qr_code ? (
+          ) : signInPayload ? (
             <div className="text-center">
               {/* QR Code */}
               <div className="flex justify-center mb-4">
                 <div className="bg-white p-4 rounded-lg">
                   <img
-                    src={signInPayload.qr_code}
+                    src={
+                      signInPayload.qr_code ||
+                      `https://xumm.app/sign/${signInPayload.payload_id}/qr`
+                    }
                     alt="XUMM Sign-In QR Code"
                     className="w-64 h-64"
                   />

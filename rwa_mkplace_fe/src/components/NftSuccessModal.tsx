@@ -1,8 +1,8 @@
-import type { CreateNFTResponse } from "../services/nftService";
+import type { CreateNftResponse } from "../services/api-client";
 
 interface NftSuccessModalProps {
   isOpen: boolean;
-  nftResult: CreateNFTResponse | null;
+  nftResult: CreateNftResponse | null;
   onClose: () => void;
   onCreateAnother: () => void;
 }
@@ -118,9 +118,9 @@ export const NftSuccessModal = ({
               >
                 View Mint
               </a>
-              {nftResult.transfer_offer_link && (
+              {nftResult.transfer_offer_hash && (
                 <a
-                  href={nftResult.transfer_offer_link}
+                  href={`https://testnet.xrpl.org/transactions/${nftResult.transfer_offer_hash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-outline btn-xs flex-1"

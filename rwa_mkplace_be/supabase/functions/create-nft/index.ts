@@ -101,6 +101,7 @@ const handler = async (req: Request, ctx: { user: JwtPayload }) => {
           if (payload) {
             const acceptance: OfferAcceptance = {
               payload_id: payload.uuid,
+              qr_code: payload.refs?.qr_png || `https://xumm.app/sign/${payload.uuid}/qr`,
               deep_link: enriched.deepLink,
               offer_index: giveNftToCreatorResult.offerIndex,
               pushed: payload.pushed,

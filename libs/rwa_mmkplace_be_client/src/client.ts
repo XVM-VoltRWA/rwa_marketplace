@@ -57,7 +57,7 @@ export class RwaMarketplaceClient {
     async createNft(request: CreateNftRequest): Promise<ApiResponse<CreateNftResponse>> {
         try {
             const response: AxiosResponse<CreateNftResponse> = await this.client.post(
-                '/functions/v1/create-nft',
+                '/create-nft',
                 request
             );
 
@@ -82,7 +82,7 @@ export class RwaMarketplaceClient {
     async createOffer(request: CreateOfferRequest): Promise<ApiResponse<CreateOfferResponse>> {
         try {
             const response: AxiosResponse<CreateOfferResponse> = await this.client.post(
-                '/functions/v1/create-offer',
+                '/create-offer',
                 request
             );
 
@@ -107,7 +107,7 @@ export class RwaMarketplaceClient {
     async xummSignIn(request?: { wallet_address?: string }): Promise<ApiResponse<SignInResponse>> {
         try {
             const response: AxiosResponse<SignInResponse> = await this.client.post(
-                '/functions/v1/xumm-signin',
+                '/xumm-signin',
                 request || {}
             );
 
@@ -132,7 +132,7 @@ export class RwaMarketplaceClient {
     async getXummSignInStatus(payloadId: string): Promise<ApiResponse<SignInStatusResponse>> {
         try {
             const response: AxiosResponse<SignInStatusResponse> = await this.client.get(
-                `/functions/v1/xumm-signin?payload_id=${payloadId}`
+                `/xumm-signin?payload_id=${payloadId}`
             );
 
             return {
@@ -161,10 +161,8 @@ export class RwaMarketplaceClient {
         }
 
         if (config.headers) {
-            this.client.defaults.headers = {
-                ...this.client.defaults.headers,
-                ...config.headers,
-            };
+            // Update headers properly for axios
+            Object.assign(this.client.defaults.headers.common, config.headers);
         }
     }
 

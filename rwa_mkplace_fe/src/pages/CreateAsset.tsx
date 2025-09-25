@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import { createNFT } from "../services/nftService";
-import type { NFTMetadata, CreateNFTResponse } from "../services/nftService";
+import { createNft, type CreateNftResponse } from "../services/api-client";
 import { useWalletStore } from "../store/walletStore";
 import { NftSuccessModal } from "../components/NftSuccessModal";
 
@@ -22,7 +21,7 @@ const CreateAsset = () => {
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const [nftResult, setNftResult] = useState<CreateNFTResponse | null>(null);
+  const [nftResult, setNftResult] = useState<CreateNftResponse | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,8 +39,8 @@ const CreateAsset = () => {
 
     setIsLoading(true);
 
-    // Build metadata object
-    const metadata: NFTMetadata = {
+    // Build metadata object (only metadata fields, not auth fields)
+    const metadata = {
       external_link: formData.external_link,
       description: formData.description,
       category: formData.category,
@@ -56,13 +55,17 @@ const CreateAsset = () => {
 
     // Call create-nft function via service
     try {
-      const result = await createNFT({
+      console.log("Creating NFT with:", {
         name: formData.name,
         image_url: formData.image_url || "https://via.placeholder.com/400x400?text=No+Image",
-        owner_address: walletAddress,
-        metadata,
-        xumm_user_token: xummUserToken || undefined,
+        metadata
       });
+
+      const result = await createNft(
+        formData.name,
+        formData.image_url || "https://via.placeholder.com/400x400?text=No+Image",
+        metadata
+      );
 
       console.log("NFT Creation Result:", result);
 
